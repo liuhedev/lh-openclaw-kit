@@ -6,19 +6,20 @@
 
 ```
 lh-openclaw-kit/
-├── scripts/              # 通用自动化脚本
-│   └── feishu_send.py    # 飞书发图片/消息工具
-└── skills/               # OpenClaw 自定义 Skills
-    └── lh-edge-tts/      # 文字转语音 Skill
+├── scripts/
+│   └── feishu/               # 飞书相关脚本
+│       └── feishu_send.py    # 发图片/消息工具
+└── skills/                   # OpenClaw 自定义 Skills
+    └── lh-edge-tts/          # 文字转语音 Skill
 ```
 
 ## scripts
 
 | 脚本 | 说明 |
 |------|------|
-| [feishu_send.py](scripts/feishu_send.py) | 通过飞书 API 发送图片、文件或文字消息，支持本地路径和 URL |
+| [scripts/feishu/feishu_send.py](scripts/feishu/feishu_send.py) | 通过飞书 API 发送图片、文件或文字消息，支持本地路径和 URL |
 
-详细用法见 [scripts/feishu_send_README.md](scripts/feishu_send_README.md)
+详细用法见 [scripts/feishu/README.md](scripts/feishu/README.md)
 
 ## skills
 
