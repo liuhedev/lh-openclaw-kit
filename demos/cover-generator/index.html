@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公众号封面生成器 - OpenClaw Kit</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
+        .header { text-align: center; color: white; margin-bottom: 40px; }
+        .header h1 { font-size: 36px; margin-bottom: 10px; font-weight: 600; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .container { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 400px 1fr; gap: 30px; }
+        .controls { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); height: fit-content; }
+        .controls h2 { margin-bottom: 24px; color: #333; font-size: 20px; font-weight: 600; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #555; font-size: 14px; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 15px; transition: all 0.3s; font-family: inherit; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .section-title { font-size: 14px; font-weight: 600; color: #666; margin: 24px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .color-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .color-btn { width: 100%; height: 50px; border: 3px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .color-btn:hover { transform: scale(1.1); }
+        .color-btn.active { border-color: white; box-shadow: 0 0 0 2px #667eea; }
+        .preview-area { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .preview-header h2 { color: #333; font-size: 20px; font-weight: 600; }
+        .size-info { font-size: 13px; color: #999; background: #f5f5f5; padding: 6px 12px; border-radius: 6px; }
+        .cover-preview { width: 900px; height: 383px; margin: 0 auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; }
+        .cover-preview .title { font-size: 56px; font-weight: 700; color: white; text-align: center; margin-bottom: 20px; line-height: 1.2; text-shadow: 2px 2px 8px rgba(0,0,0,0.2); }
+        .cover-preview .subtitle { font-size: 26px; color: rgba(255,255,255,0.95); text-align: center; line-height: 1.4; text-shadow: 1px 1px 4px rgba(0,0,0,0.15); }
+        .color-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .color-pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .color-orange { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .color-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .color-green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .tips { margin-top: 24px; padding: 16px 20px; background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%); border-radius: 8px; font-size: 14px; color: #856404; border-left: 4px solid #ffc107; }
+        .download-hint { margin-top: 20px; text-align: center; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎨 公众号封面生成器</h1>
+        <p>实时预览 · 多种风格 · 标准尺寸</p>
+    </div>
+    <div class="container">
+        <div class="controls">
+            <h2>📝 内容设置</h2>
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="titleInput" value="从理论到实践">
+            </div>
+            <div class="form-group">
+                <label>副标题</label>
+                <textarea id="subtitleInput">用 OpenClaw 搭建本地 Agent 集群</textarea>
+            </div>
+            <div class="section-title">配色方案</div>
+            <div class="color-selector">
+                <button class="color-btn color-purple active" data-color="purple"></button>
+                <button class="color-btn color-pink" data-color="pink"></button>
+                <button class="color-btn color-orange" data-color="orange"></button>
+                <button class="color-btn color-blue" data-color="blue"></button>
+                <button class="color-btn color-green" data-color="green"></button>
+            </div>
+            <div class="tips">💡 修改内容后实时预览，使用截图工具（macOS: Cmd+Shift+4）截取封面区域保存。</div>
+        </div>
+        <div class="preview-area">
+            <div class="preview-header">
+                <h2>🖼️ 封面预览</h2>
+                <div class="size-info">900 × 383 px</div>
+            </div>
+            <div class="cover-preview color-purple" id="coverPreview">
+                <div class="title" id="previewTitle">从理论到实践</div>
+                <div class="subtitle" id="previewSubtitle">用 OpenClaw 搭建本地 Agent 集群</div>
+            </div>
+            <div class="download-hint">使用截图工具截取上方封面区域保存为图片</div>
+        </div>
+    </div>
+    <script>
+        const titleInput = document.getElementById('titleInput');
+        const subtitleInput = document.getElementById('subtitleInput');
+        const previewTitle = document.getElementById('previewTitle');
+        const previewSubtitle = document.getElementById('previewSubtitle');
+        const coverPreview = document.getElementById('coverPreview');
+        const colorBtns = document.querySelectorAll('.color-btn');
+        titleInput.addEventListener('input', (e) => { previewTitle.textContent = e.target.value || '标题'; });
+        subtitleInput.addEventListener('input', (e) => { previewSubtitle.textContent = e.target.value || ''; previewSubtitle.style.display = e.target.value ? 'block' : 'none'; });
+        colorBtns.forEach(btn => { btn.addEventListener('click', () => { colorBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active'); coverPreview.className = `cover-preview color-${btn.dataset.color}`; }); });
+    </script>
+</body>
+</html>
