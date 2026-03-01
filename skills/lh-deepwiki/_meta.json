@@ -1,0 +1,7 @@
+{
+  "name": "lh-deepwiki",
+  "version": "1.0.0",
+  "description": "Query the DeepWiki MCP server for GitHub repository documentation, wiki structure, and AI-powered questions.",
+  "author": "liuhedev",
+  "license": "MIT"
+}
