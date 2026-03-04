@@ -1,6 +1,6 @@
 ---
 name: lh-deepwiki
-description: (龙虾哥定制版) 使用 Streamable HTTP 协议查询 DeepWiki MCP 服务，获取 GitHub 仓库文档、结构及 AI 问答。
+description: Query DeepWiki MCP service via Streamable HTTP to get GitHub repository documentation, wiki structure, and AI-powered Q&A.
 homepage: https://github.com/liuhedev/lh-openclaw-kit
 ---
 
