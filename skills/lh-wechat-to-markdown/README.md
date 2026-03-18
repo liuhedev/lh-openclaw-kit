@@ -1,74 +1,33 @@
 # lh-wechat-to-markdown
 
-抓取微信公众号文章并转换为 Markdown，同时保存 HTML 快照。
+抓取微信公众号文章并转换为干净的 Markdown 格式，同时保存渲染后的 HTML 快照。
 
 ## 快速开始
 
 ```bash
-# 安装依赖
-pip install playwright beautifulsoup4 python-frontmatter markdownify requests
-
-# 安装 Playwright 浏览器
+# 依赖安装
+pip install -r requirements.txt
 playwright install chromium
-
-# 抓取微信文章（默认无头模式）
-python3 scripts/main.py https://mp.weixin.qq.com/s/xxx
 ```
 
-## 主要功能
-
-- ✅ Chrome CDP 浏览器自动化，完整 JavaScript 渲染
-- ✅ 两种抓取模式：自动抓取 vs 等待用户确认
-- ✅ 保存 HTML 快照和转换后的 Markdown
-- ✅ 智能提取公众号文章结构
-- ✅ **微信图片定向修复**：优先使用样本中稳定出现的 `data-src`，并兼容 `data-original`、`data-actualsrc`、`data-croporisrc`、`data-cover`
-- ✅ **图片本地化下载**（`--download-images`）：下载到 `images/` 目录，并复用浏览器会话的 `Referer/Cookie`，单张失败不影响整体
-
-## 使用示例
-
+## 常用命令
 ```bash
-# 自动模式（默认无头）
-python3 scripts/main.py <wechat-url>
-
-# 使用可视浏览器
-python3 scripts/main.py <wechat-url> --headed
-
-# 等待模式（推荐用于需要登录的情况，需要 --headed）
-python3 scripts/main.py <wechat-url> --headed --wait
+# 默认：无头模式自动抓取公开文章
+python3 scripts/main.py <微信文章链接>
 
 # 保存到指定文件
-python3 scripts/main.py <wechat-url> -o my-article.md
+python3 scripts/main.py <微信文章链接> -o output.md
 
-# 下载图片到本地
-python3 scripts/main.py <wechat-url> --download-images
+# 自动下载图片到本地 images/ 目录，链接自动替换为相对路径
+python3 scripts/main.py <微信文章链接> --download-images
+
+# 有头模式 + 等待人工确认（用于需要登录/有访问限制的文章）
+python3 scripts/main.py <微信文章链接> --headed --wait
 ```
 
-## 图片处理说明
+## 说明
+- 默认采用无头模式抓取公开可访问的文章，无需人工干预
+- 遇到需要登录或有访问限制的内容，使用 `--headed --wait` 打开可视浏览器，完成验证后按 Enter 触发抓取
+- 开启 `--download-images` 时会自动下载正文图片到本地，避免图片链接失效
 
-微信公众号文章在浏览器端常把 `<img src>` 渲染成 1×1 SVG 占位图。此次定向修复所依据的真实样本里，正文图片稳定出现在 `data-src`，并伴随 `data-type`、`data-w`、`data-ratio`、`data-imgfileid`；个别裁剪图还带 `data-croporisrc`。
-
-本工具在 HTML → Markdown 转换之前，会自动扫描所有 `<img>` 标签，按以下优先级提取真实图片地址：
-
-1. `data-src`（最常见）
-2. `data-original`（部分历史模板）
-3. `data-actualsrc`（极少数旧版编辑器）
-4. `data-croporisrc`（样本中个别裁剪图存在）
-5. `data-cover`（封面/头图场景兜底）
-6. `src`（兜底，仅当不是 SVG 占位图时采用）
-
-使用 `--download-images` 时：
-- 图片保存到 Markdown 同级的 `images/` 目录
-- Markdown 中图片链接自动替换为相对路径（如 `images/img_00_xxxx.jpg`）
-- 下载时复用当前浏览器会话里的 `Referer` 和 Cookie，提高微信图片落盘成功率
-- 自动兼容 markdownify 生成的 `![图片](url "null")` 形式，避免把标题字段误当成 URL
-- 单张下载失败仅打印警告，保留原始 URL，不会导致整个流程中断
-
-## 适用范围
-
-- 面向可正常访问的微信公众号文章归档与 Markdown 转换
-- 默认支持无头抓取，并保留有头模式作为登录/人工确认兜底
-- 优先保证正文、元数据和图片资源的可归档性
-- 对于少量特殊模板或受访问限制的页面，建议结合保存下来的 HTML 快照进一步处理
-- 尊重原创版权，遵守微信服务条款
-
-详细文档请见 [SKILL.md](./SKILL.md)
+完整文档请见 [SKILL.md](./SKILL.md)
