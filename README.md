@@ -37,6 +37,7 @@ lh-openclaw-kit/
 | Skill | 说明 |
 |-------|------|
 | [lh-edge-tts](skills/lh-edge-tts/) | 基于微软 Edge TTS 的文字转语音工具，支持多音色、语速调节和字幕导出 |
+| [lh-wechat-to-markdown](skills/lh-wechat-to-markdown/) | 微信公众号文章抓取与 Markdown 转换工具，支持浏览器自动化和 HTML 快照保存 |
 
 ## 贡献
 
