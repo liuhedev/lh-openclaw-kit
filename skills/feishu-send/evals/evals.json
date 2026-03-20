@@ -4,22 +4,62 @@
     {
       "id": 1,
       "prompt": "把 /tmp/report.docx 发到飞书给我",
-      "expected_output": "调用 file 子命令，走文件上传链路，飞书收到真实 docx 附件，不出现路径文本"
+      "expected_output": "调用 file 子命令，走文件上传链路，飞书收到真实 docx 附件，不出现路径文本",
+      "files": []
     },
     {
       "id": 2,
       "prompt": "把 cover.png 发到飞书群里，附一句：今日封面",
-      "expected_output": "调用 image 子命令，图片正常显示，caption 先于图片发送"
+      "expected_output": "调用 image 子命令，图片正常显示，caption 先于图片发送",
+      "files": []
     },
     {
       "id": 3,
       "prompt": "发一条飞书消息：任务执行完成",
-      "expected_output": "调用 text 子命令，飞书收到纯文本消息"
+      "expected_output": "调用 text 子命令，飞书收到纯文本消息",
+      "files": []
     },
     {
       "id": 4,
       "prompt": "把 /tmp/news.json 里的内容以卡片形式发到飞书，标题叫「今日要闻」",
-      "expected_output": "调用 card 子命令，飞书收到结构化卡片消息，标题为「今日要闻」"
+      "expected_output": "调用 card 子命令，飞书收到结构化卡片消息，标题为「今日要闻」",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "帮我把这个网络图片发到飞书：https://example.com/banner.png",
+      "expected_output": "调用 image 子命令，识别 URL 格式，下载图片后上传发送，飞书正常显示图片",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "这个截图太大了，压缩一下发到飞书群里，路径是 /tmp/screenshot-8mb.png",
+      "expected_output": "调用 image 子命令，识别大图自动压缩（超 3MB 多级压缩），压缩后上传发送",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "把 report.md 的内容用富文本格式发到飞书，标题叫「周报总结」",
+      "expected_output": "调用 post 子命令，使用 --content-file 读取 Markdown 文件，转换为飞书 post 富文本格式发送",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "发个飞书通知：**重要提醒** 今天下午 3 点开会，[会议链接](https://meeting.feishu.cn/xxx)",
+      "expected_output": "调用 post 子命令，使用 --content 直接传 Markdown 内容，粗体和链接正确转换为富文本格式",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "用 octopus 账号发一条飞书消息给 ou_xxxxx：任务已完成",
+      "expected_output": "调用 text 子命令，使用 --account octopus 切换账号，--to ou_xxxxx 指定接收人",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "切换到 bot2 账号，把这个 PDF 发到飞书群 oc_abcdef",
+      "expected_output": "调用 file 子命令，使用 --account bot2 切换账号，--to oc_abcdef 指定群聊",
+      "files": []
     }
   ]
 }

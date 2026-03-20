@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-"""feishu-send: 发送文件、图片、文本、卡片到飞书
+"""feishu-send: 发送文件、图片、文本、卡片、富文本到飞书
 
 用法：
-  python3 feishu_send.py file  <路径>      [--to <id>] [--caption <文字>]
-  python3 feishu_send.py image <路径或URL> [--to <id>] [--caption <文字>]
-  python3 feishu_send.py text  <消息>      [--to <id>]
-  python3 feishu_send.py card  <标题> --items <json文件> [--to <id>] [--color <颜色>]
+  python3 feishu_send.py file   <路径>      [--to <id>] [--caption <文字>] [--account <账号>]
+  python3 feishu_send.py image  <路径或URL> [--to <id>] [--caption <文字>] [--account <账号>]
+  python3 feishu_send.py text   <消息>      [--to <id>] [--account <账号>]
+  python3 feishu_send.py card   <标题> --items <json文件> [--to <id>] [--color <颜色>] [--account <账号>]
+  python3 feishu_send.py post   --title <标题> --content <内容或--content-file> [--to <id>] [--account <账号>]
 
-凭证加载优先级（由 feishu_client 与本脚本预载共同完成）：
+凭证加载优先级（由 feishu_client 完成）：
   1. 已存在的环境变量
-  2. ~/.config/dev-workflow/.env（本脚本启动时 setdefault 注入）
+  2. ~/.config/dev-workflow/.env
   3. ~/.openclaw/.env
-  4. ~/.openclaw/openclaw.json（channels.feishu.accounts.main）
-
-共享客户端目录（须含 feishu_client.py）：
-  1. 环境变量 FEISHU_CLIENT_ROOT（可在 dev-workflow/.env 中配置）
-  2. 若未设置：从本脚本向上解析仓库根（skills/.../scripts/ 的上三级），尝试 <根>/scripts/feishu
+  4. ~/.openclaw/openclaw.json（channels.feishu.accounts.<账号名>）
 
 接收目标格式：
   ou_xxx    用户 DM（open_id）
@@ -26,77 +23,120 @@
 import argparse
 import io
 import json
-import os
+import re
 import sys
 from pathlib import Path
 
-
-def _load_dotenv_setdefault(path: Path) -> None:
-    if not path.is_file():
-        return
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key:
-            os.environ.setdefault(key, value)
-
-
-def _ensure_feishu_client_on_path() -> None:
-    _load_dotenv_setdefault(Path.home() / ".config" / "dev-workflow" / ".env")
-
-    raw = (os.environ.get("FEISHU_CLIENT_ROOT") or "").strip()
-    if raw:
-        root = Path(raw).expanduser().resolve()
-        if (root / "feishu_client.py").is_file():
-            sys.path.insert(0, str(root))
-            return
-        print(
-            f"❌ FEISHU_CLIENT_ROOT 无效（未找到 feishu_client.py）: {root}",
-            file=sys.stderr,
-        )
-        sys.exit(2)
-
-    here = Path(__file__).resolve()
-    repo_root = here.parents[3]
-    legacy = repo_root / "scripts" / "feishu"
-    if (legacy / "feishu_client.py").is_file():
-        sys.path.insert(0, str(legacy))
-        return
-
-    print(
-        "❌ 未找到飞书共享客户端。请任选其一：\n"
-        "  - 在环境变量或 ~/.config/dev-workflow/.env 中设置 FEISHU_CLIENT_ROOT="
-        "（指向包含 feishu_client.py 的目录）\n"
-        "  - 或将 skill 置于含 scripts/feishu/feishu_client.py 的仓库中（标准布局）",
-        file=sys.stderr,
-    )
-    sys.exit(2)
-
-
-_ensure_feishu_client_on_path()
-
+# 同目录导入
 from feishu_client import (
     get_token,
     resolve_receive_id,
+    send_message,
     send_text,
     upload_image,
     send_image,
     send_file,
 )
+from feishu_card_utils import build_card, card_hr, card_markdown, card_note, send_card as _send_card
 
-try:
-    from feishu_card_utils import build_card, send_card as _send_card
-    _HAS_CARD = True
-except ImportError:
-    _HAS_CARD = False
+
+# ── 辅助函数 ────────────────────────────────────
+
+def compress_image(image_bytes: bytes, filename: str, max_size_kb: int = 3072) -> tuple:
+    """压缩图片到指定大小以内，返回 (bytes, filename)
+
+    多级策略：
+    1. 先尝试降低 JPEG quality（从高到低）
+    2. 如果仍然超大，再缩小图片尺寸
+    """
+    try:
+        from PIL import Image
+        size_kb = len(image_bytes) / 1024
+        if size_kb <= max_size_kb:
+            return image_bytes, filename
+
+        img = Image.open(io.BytesIO(image_bytes))
+        # 转 RGB（PNG 可能有 alpha）
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+
+        # 先尝试只降质量，不缩尺寸
+        for quality in [85, 75, 65]:
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=quality, optimize=True)
+            if len(buf.getvalue()) / 1024 <= max_size_kb:
+                compressed = buf.getvalue()
+                new_filename = Path(filename).stem + ".jpg"
+                print(f"压缩: {size_kb:.0f}KB → {len(compressed)//1024}KB (quality={quality})")
+                return compressed, new_filename
+
+        # 质量降到最低还超，才缩尺寸
+        ratio = (max_size_kb * 1024 / len(image_bytes)) ** 0.5
+        new_w = int(img.width * ratio)
+        new_h = int(img.height * ratio)
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=65, optimize=True)
+        compressed = buf.getvalue()
+        new_filename = Path(filename).stem + ".jpg"
+        print(f"压缩: {size_kb:.0f}KB → {len(compressed)//1024}KB (缩放+压缩)")
+        return compressed, new_filename
+    except ImportError:
+        return image_bytes, filename
+
+
+def markdown_to_post_content(markdown_text: str) -> list:
+    """将简单 Markdown 转换为飞书 post content 格式
+
+    支持：
+    - **bold** → bold 文本
+    - [text](url) → 超链接
+    - 空行分段
+    """
+    paragraphs = []
+    # 按空行分段
+    raw_paragraphs = re.split(r'\n\s*\n', markdown_text.strip())
+
+    for para in raw_paragraphs:
+        if not para.strip():
+            continue
+        elements = []
+        # 合并行内内容（单个换行不分段）
+        text = para.replace('\n', ' ').strip()
+
+        # 解析行内格式：**bold** 和 [text](url)
+        pattern = r'(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))'
+        parts = re.split(pattern, text)
+
+        for part in parts:
+            if not part:
+                continue
+            # 匹配粗体
+            bold_match = re.match(r'\*\*([^*]+)\*\*', part)
+            if bold_match:
+                elements.append({
+                    "tag": "text",
+                    "text": bold_match.group(1),
+                    "style": {"bold": True}
+                })
+                continue
+            # 匹配链接
+            link_match = re.match(r'\[([^\]]+)\]\(([^)]+)\)', part)
+            if link_match:
+                elements.append({
+                    "tag": "a",
+                    "text": link_match.group(1),
+                    "href": link_match.group(2)
+                })
+                continue
+            # 普通文本
+            if part.strip():
+                elements.append({"tag": "text", "text": part})
+
+        if elements:
+            paragraphs.append(elements)
+
+    return paragraphs
 
 
 # ── 子命令 ────────────────────────────────────
@@ -107,7 +147,7 @@ def cmd_file(args):
         print(f"❌ 文件不存在: {args.path}", file=sys.stderr)
         return 1
 
-    token = get_token()
+    token = get_token(args.account)
     receive_id, id_type = resolve_receive_id(args.to)
 
     if args.caption:
@@ -121,7 +161,7 @@ def cmd_file(args):
 def cmd_image(args):
     import requests
 
-    token = get_token()
+    token = get_token(args.account)
     receive_id, id_type = resolve_receive_id(args.to)
 
     source = args.path
@@ -138,20 +178,9 @@ def cmd_image(args):
         image_bytes = p.read_bytes()
         filename = p.name
 
-    # 超 3MB 尝试压缩
+    # 超 3MB 尝试多级压缩
     if len(image_bytes) > 3 * 1024 * 1024:
-        try:
-            from PIL import Image
-            img = Image.open(io.BytesIO(image_bytes))
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-            buf = io.BytesIO()
-            img.save(buf, format="JPEG", quality=75, optimize=True)
-            image_bytes = buf.getvalue()
-            filename = Path(filename).stem + ".jpg"
-            print(f"图片已压缩: {len(image_bytes) // 1024}KB")
-        except ImportError:
-            pass
+        image_bytes, filename = compress_image(image_bytes, filename)
 
     if args.caption:
         send_text(token, receive_id, args.caption, id_type)
@@ -163,7 +192,7 @@ def cmd_image(args):
 
 
 def cmd_text(args):
-    token = get_token()
+    token = get_token(args.account)
     receive_id, id_type = resolve_receive_id(args.to)
     msg_id = send_text(token, receive_id, args.message, id_type)
     print(f"✅ [已发送] 文本消息  message_id: {msg_id}")
@@ -171,14 +200,9 @@ def cmd_text(args):
 
 
 def cmd_card(args):
-    if not _HAS_CARD:
-        print("❌ feishu_card_utils 未找到，无法发送卡片", file=sys.stderr)
-        return 1
-
+    token = get_token(args.account)
     with open(args.items, encoding="utf-8") as f:
         items = json.load(f)
-
-    from feishu_card_utils import card_hr, card_markdown
     elements = []
     for i, item in enumerate(items):
         if i > 0:
@@ -192,17 +216,49 @@ def cmd_card(args):
             parts.append(f"[原文]({item['url']})")
         elements.append(card_markdown("\n".join(parts)))
 
-    msg_id = _send_card(args.title, args.color, elements, to=args.to)
+    receive_id, id_type = resolve_receive_id(args.to)
+    from feishu_client import send_interactive_card
+    card = build_card(args.title, args.color, elements)
+    msg_id = send_interactive_card(token, receive_id, card, id_type)
     print(f"✅ [已发送] 卡片：{args.title}  message_id: {msg_id}")
+    return 0
+
+
+def cmd_post(args):
+    """发送富文本消息 (post 类型)"""
+    # 获取内容
+    if args.content_file:
+        content_path = Path(args.content_file)
+        if not content_path.exists():
+            print(f"❌ 文件不存在: {args.content_file}", file=sys.stderr)
+            return 1
+        markdown_text = content_path.read_text(encoding="utf-8")
+    else:
+        markdown_text = args.content
+
+    # 转换为飞书 post 格式
+    post_content = markdown_to_post_content(markdown_text)
+    content = {
+        "zh_cn": {
+            "title": args.title,
+            "content": post_content
+        }
+    }
+
+    token = get_token(args.account)
+    receive_id, id_type = resolve_receive_id(args.to)
+    msg_id = send_message(token, receive_id, "post", content, id_type)
+    print(f"✅ [已发送] 富文本消息：{args.title}  message_id: {msg_id}")
     return 0
 
 
 # ── CLI ────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="发送文件/图片/文本/卡片到飞书")
+    parser = argparse.ArgumentParser(description="发送文件/图片/文本/卡片/富文本到飞书")
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--to", help="接收人 open_id 或群 chat_id（oc_ 开头）")
+    common.add_argument("--account", default="main", help="飞书账号名（默认: main）")
 
     sub = parser.add_subparsers(dest="cmd", required=True)
 
@@ -227,6 +283,14 @@ def main():
                         choices=["blue", "green", "orange", "red", "purple"],
                         help="卡片颜色（默认 blue）")
     p_card.set_defaults(func=cmd_card)
+
+    # post 子命令（富文本消息）
+    p_post = sub.add_parser("post", parents=[common], help="发送富文本消息（支持 Markdown）")
+    p_post.add_argument("--title", required=True, help="消息标题")
+    post_content = p_post.add_mutually_exclusive_group(required=True)
+    post_content.add_argument("--content", help="Markdown 格式的消息内容")
+    post_content.add_argument("--content-file", help="Markdown 文件路径")
+    p_post.set_defaults(func=cmd_post)
 
     args = parser.parse_args()
     sys.exit(args.func(args))
