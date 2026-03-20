@@ -14,6 +14,7 @@ lh-openclaw-kit/
 │   └── cover-generator/           # 公众号封面图生成器
 │       └── index.html
 └── skills/                        # OpenClaw 自定义 Skills
+    ├── feishu-send/               # 飞书文件/图片/文本/卡片发送（API 直发附件）
     └── lh-edge-tts/               # 文字转语音 Skill
 ```
 
@@ -36,6 +37,7 @@ lh-openclaw-kit/
 
 | Skill | 说明 |
 |-------|------|
+| [feishu-send](skills/feishu-send/) | 通过飞书开放平台 API 发送文件、图片、文本与结构化卡片；共享客户端目录可通过 `FEISHU_CLIENT_ROOT` 或 `~/.config/dev-workflow/.env` 配置 |
 | [lh-edge-tts](skills/lh-edge-tts/) | 基于微软 Edge TTS 的文字转语音工具，支持多音色、语速调节和字幕导出 |
 | [lh-wechat-to-markdown](skills/lh-wechat-to-markdown/) | 微信公众号文章抓取与 Markdown 转换工具，支持浏览器自动化和 HTML 快照保存 |
 

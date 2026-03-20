@@ -1,0 +1,25 @@
+{
+  "skill_name": "feishu-send",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把 /tmp/report.docx 发到飞书给我",
+      "expected_output": "调用 file 子命令，走文件上传链路，飞书收到真实 docx 附件，不出现路径文本"
+    },
+    {
+      "id": 2,
+      "prompt": "把 cover.png 发到飞书群里，附一句：今日封面",
+      "expected_output": "调用 image 子命令，图片正常显示，caption 先于图片发送"
+    },
+    {
+      "id": 3,
+      "prompt": "发一条飞书消息：任务执行完成",
+      "expected_output": "调用 text 子命令，飞书收到纯文本消息"
+    },
+    {
+      "id": 4,
+      "prompt": "把 /tmp/news.json 里的内容以卡片形式发到飞书，标题叫「今日要闻」",
+      "expected_output": "调用 card 子命令，飞书收到结构化卡片消息，标题为「今日要闻」"
+    }
+  ]
+}
