@@ -33,6 +33,17 @@ OpenClaw 的通用 `message` 工具在飞书渠道下，发送本地文件时容
 | `card` | 交互式卡片（JSON 格式） |
 | `post` | 富文本消息（Markdown → 飞书 post 格式） |
 
+## 专用卡片脚本
+
+除主入口外，还提供以下专用发送脚本（均位于 `scripts/`）：
+
+| 脚本 | 用途 |
+|------|------|
+| `feishu_send_card.py` | 结构化列表卡片（日报/要闻，每项含摘要/借鉴/作者/链接） |
+| `feishu_send_patrol.py` | 每日巡检报告卡片（备份、环境自检、记忆维护、告警） |
+| `feishu_send_progress.py` | 文章多平台分发进度卡片（从 `status.json` 生成） |
+| `feishu_send_work_report.py` | 工作日报卡片（今日完成/进行中/阻塞项/明日计划） |
+
 ## 脚本路径
 
 入口文件为 skill 内的 `scripts/feishu_send.py`。在 **`skills/feishu-send/` 目录下**（与 `SKILL.md` 同级）执行：
