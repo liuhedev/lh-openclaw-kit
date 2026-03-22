@@ -8,13 +8,15 @@
 lh-openclaw-kit/
 ├── scripts/
 │   └── feishu/                    # 飞书相关脚本
-│       ├── feishu_send.py         # 发图片/消息工具
-│       └── feishu_send_card.py    # 飞书消息卡片发送器
-├── demos/
-│   └── cover-generator/           # 公众号封面图生成器
-│       └── index.html
+│       └── feishu_send.py         # 发图片/消息工具
 └── skills/                        # OpenClaw 自定义 Skills
-    ├── feishu-send/               # 飞书文件/图片/文本/卡片发送（API 直发附件）
+    ├── feishu-send/               # 飞书文件/图片/文本/卡片/日报发送（API 直发附件）
+    │   └── scripts/
+    │       ├── feishu_send.py           # 主入口（text/image/file/card/post）
+    │       ├── feishu_send_card.py      # 结构化列表卡片
+    │       ├── feishu_send_patrol.py    # 每日巡检报告卡片
+    │       ├── feishu_send_progress.py  # 分发进度卡片
+    │       └── feishu_send_work_report.py # 工作日报卡片
     └── lh-edge-tts/               # 文字转语音 Skill
 ```
 
@@ -23,21 +25,12 @@ lh-openclaw-kit/
 | 脚本 | 说明 |
 |------|------|
 | [feishu_send.py](scripts/feishu/feishu_send.py) | 通过飞书 API 发送图片、文件或文字消息，支持本地路径和 URL |
-| [feishu_send_card.py](scripts/feishu/feishu_send_card.py) | 飞书消息卡片发送器，支持 markdown、分割线、彩色标题头，适合日报/周报推送 |
-
-详细用法见 [scripts/feishu/README.md](scripts/feishu/README.md)
-
-## demos
-
-| Demo | 说明 | 在线体验 |
-|------|------|---------|
-| [cover-generator](demos/cover-generator/) | 公众号封面图生成器，5 种配色，实时预览，900×383px | [GitHub Pages](https://liuhedev.github.io/lh-openclaw-kit/demos/cover-generator/) |
 
 ## skills
 
 | Skill | 说明 |
 |-------|------|
-| [feishu-send](skills/feishu-send/) | 通过飞书开放平台 API 发送文件、图片、文本与结构化卡片；共享客户端目录可通过 `FEISHU_CLIENT_ROOT` 或 `~/.config/dev-workflow/.env` 配置 |
+| [feishu-send](skills/feishu-send/) | 通过飞书开放平台 API 发送文件、图片、文本、结构化卡片、巡检报告、分发进度、工作日报 |
 | [lh-edge-tts](skills/lh-edge-tts/) | 基于微软 Edge TTS 的文字转语音工具，支持多音色、语速调节和字幕导出 |
 | [lh-wechat-to-markdown](skills/lh-wechat-to-markdown/) | 微信公众号文章抓取与 Markdown 转换工具，支持浏览器自动化和 HTML 快照保存 |
 
