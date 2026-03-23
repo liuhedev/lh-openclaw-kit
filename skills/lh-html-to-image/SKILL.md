@@ -1,12 +1,18 @@
 ---
 name: lh-html-to-image
-description: Generate images from HTML+CSS via Chrome headless screenshot. Perfect for covers, posters, info cards, and text-layout images. Zero API cost, 100% accurate text rendering. Triggers: "generate cover", "poster", "HTML to image", "make image".
+description: Generate standalone images from HTML+CSS via Chrome headless screenshot. Use for covers, posters, info cards, and text-layout images. Not the main entry for full video generation.
 homepage: https://github.com/liuhedev/lh-openclaw-kit
 ---
 
 # HTML to Image
 
 Generate images from HTML+CSS using Chrome headless screenshots. Ideal for covers, posters, info cards, and any text-heavy visual content. Zero API cost, 100% accurate text rendering.
+
+## 边界
+
+- 本 skill 只负责独立出图能力。
+- 如果任务目标是完整视频生成，优先使用 `lh-video-gen`，由视频主流程决定是否调用本 skill。
+- 如果用户只要封面图、海报、卡片图、信息图，再使用本 skill。
 
 ## Use Cases
 

@@ -1,12 +1,19 @@
 ---
 name: lh-video-gen
-description: Generate vertical short videos (9:16) from a Markdown script. Parses script sections, generates TTS audio, renders subtitle cards, and composites into MP4 with FFmpeg.
+description: Generate vertical short videos (9:16) from a Markdown script. This is the main workflow skill for script-to-video tasks; it may internally use TTS or image-generation helpers.
 homepage: https://github.com/liuhedev/lh-openclaw-kit
 ---
 
 # Video-Gen Skill
 
 从视频脚本 Markdown 文件一键生成竖版短视频（9:16）。
+
+## 边界
+
+- 本 skill 是“脚本转视频”主流程入口。
+- 如果用户只要单独音频，不做视频，优先使用 `lh-edge-tts`。
+- 如果用户只要单张封面、海报、信息卡片，不做视频，优先使用 `lh-html-to-image`。
+- 当任务目标是完整视频产出时，优先使用本 skill，再按需调用配套 skill。
 
 **核心思路：以图定音**
 - 每段脚本的画面说明 -> 字幕卡片图
@@ -16,13 +23,13 @@ homepage: https://github.com/liuhedev/lh-openclaw-kit
 ## 快速开始
 
 ```bash
-python3 generate.py script.md -o output.mp4
+python3 generate.py script.md -o content/articles/YYYY-MM-DD/resources/video/output.mp4
 ```
 
 ### 使用预制图片（跳过 Chrome 截图）
 
 ```bash
-python3 generate.py script.md --images-dir ./my-slides -o output.mp4
+python3 generate.py script.md --images-dir content/articles/YYYY-MM-DD/resources/images -o content/articles/YYYY-MM-DD/resources/video/output.mp4
 ```
 
 图片命名规则：`slide_01.png`, `slide_02.png`...，与脚本分段一一对应。
@@ -41,7 +48,7 @@ python3 generate.py script.md --tts-command "my-tts {text} -o {output} -v {voice
 python3 generate.py <脚本路径> [选项]
 
 选项：
-  -o, --output        输出 MP4 路径（默认：tmp/video-output.mp4）
+  -o, --output        输出 MP4 路径（必须显式传入；文章归属任务用 `content/articles/YYYY-MM-DD/resources/video/output.mp4`）
   -v, --voice         TTS 音色（默认：zh-CN-YunxiNeural）
   -r, --rate          语速（默认：+0%，如 +10%、-10%）
   -w, --width         视频宽度（默认：1080）
@@ -64,8 +71,8 @@ python3 generate.py <脚本路径> [选项]
 
 以下 Skill 非必需，但搭配使用效果更佳：
 
-- **lh-edge-tts**：TTS 配音生成。自动检测同级目录 `../lh-edge-tts/scripts/tts_converter.py`，或通过 `EDGE_TTS_PATH` 环境变量指定，或用 `--tts-command` 替换为任意 TTS 工具
-- **lh-html-to-image**：如需自定义更复杂的字幕卡片，可用此 Skill 生成图片后通过 `--images-dir` 传入
+- **lh-edge-tts**：配套音频能力，不是视频任务主入口。自动检测同级目录 `../lh-edge-tts/scripts/tts_converter.py`，或通过 `EDGE_TTS_PATH` 环境变量指定，或用 `--tts-command` 替换为任意 TTS 工具
+- **lh-html-to-image**：配套出图能力，不是视频任务主入口。如需自定义更复杂的字幕卡片，可用此 Skill 生成图片后通过 `--images-dir` 传入
 
 ## 脚本格式
 

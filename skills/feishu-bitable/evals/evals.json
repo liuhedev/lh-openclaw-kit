@@ -1,0 +1,23 @@
+{
+  "skill_name": "feishu-bitable",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我查一下飞书多维表里的数据，app_token 是 BsXfb7f5Ra6PQbsfo0dcx4yynVf，table_id 是 tbltI5f5RxG0jJ7c",
+      "expected_output": "成功读取多维表记录并返回列表",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "更新飞书多维表记录，把 record_id 为 recABC123 的状态字段改成已完成",
+      "expected_output": "成功更新指定记录的状态字段",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "从飞书 bitable 读取所有记录，然后筛选出状态为待处理的",
+      "expected_output": "读取记录并按条件筛选",
+      "files": []
+    }
+  ]
+}
