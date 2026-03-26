@@ -1,7 +1,12 @@
 ---
 name: lh-html-to-image
-description: Generate standalone images from HTML+CSS via Chrome headless screenshot. Use for covers, posters, info cards, and text-layout images. Not the main entry for full video generation.
-homepage: https://github.com/liuhedev/lh-openclaw-kit
+description: |
+  通过 Chrome 无头截图将 HTML+CSS 生成独立图片，适用于封面图、海报、信息卡片、文字排版图等场景。
+  触发关键词："生成封面图"、"生成海报"、"生成卡片图"、"html 转图片"、"html to image"。
+  注意：不是视频生成的主入口，视频任务请使用 lh-video-gen。
+metadata:
+  openclaw:
+    homepage: https://github.com/liuhedev/lh-openclaw-kit
 ---
 
 # HTML to Image

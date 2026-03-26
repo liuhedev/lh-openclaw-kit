@@ -1,7 +1,11 @@
 ---
 name: lh-video-gen
-description: Generate vertical short videos (9:16) from a Markdown script. This is the main workflow skill for script-to-video tasks; it may internally use TTS or image-generation helpers.
-homepage: https://github.com/liuhedev/lh-openclaw-kit
+description: |
+  从 Markdown 脚本一键生成竖版短视频（9:16）。当用户提到"生成短视频"、"脚本转视频"、"重新渲染视频"、"适配微信视频号"、"视频号竖版"、"横版截图变形"、"图片拼配音生成 MP4"时，必须使用本 skill。
+  本 skill 是脚本转视频的主流程入口，可内部调用 lh-edge-tts 和 lh-html-to-image 配合使用。
+metadata:
+  openclaw:
+    homepage: https://github.com/liuhedev/lh-openclaw-kit
 ---
 
 # Video-Gen Skill
@@ -23,21 +27,36 @@ homepage: https://github.com/liuhedev/lh-openclaw-kit
 ## 快速开始
 
 ```bash
-python3 generate.py script.md -o content/articles/YYYY-MM-DD/resources/video/output.mp4
+python3 {baseDir}/scripts/generate.py script.md -o content/articles/YYYY-MM-DD/resources/video/output.mp4
 ```
 
 ### 使用预制图片（跳过 Chrome 截图）
 
 ```bash
-python3 generate.py script.md --images-dir content/articles/YYYY-MM-DD/resources/images -o content/articles/YYYY-MM-DD/resources/video/output.mp4
+python3 {baseDir}/scripts/generate.py script.md --images-dir content/articles/YYYY-MM-DD/resources/images -o content/articles/YYYY-MM-DD/resources/video/output.mp4
 ```
 
 图片命名规则：`slide_01.png`, `slide_02.png`...，与脚本分段一一对应。
 
+### 适配微信视频号（处理横版截图，避免变形）
+
+```bash
+python3 {baseDir}/scripts/generate.py script.md \
+  --images-dir content/articles/YYYY-MM-DD/resources/images \
+  --platform wechat-channel \
+  -o content/articles/YYYY-MM-DD/resources/video/output-wechat.mp4
+```
+
+规则：
+- 成片保持 `1080x1920`（9:16）
+- 已经是竖版素材时直接复用
+- 横版截图自动包进竖版容器：背景模糊铺满，前景按比例缩放并居中
+- 禁止直接拉伸横图
+
 ### 自定义 TTS 命令
 
 ```bash
-python3 generate.py script.md --tts-command "my-tts {text} -o {output} -v {voice} -r {rate}"
+python3 {baseDir}/scripts/generate.py script.md --tts-command "my-tts {text} -o {output} -v {voice} -r {rate}"
 ```
 
 占位符：`{text}` 口播文案、`{output}` 输出路径、`{voice}` 音色、`{rate}` 语速。
@@ -45,7 +64,7 @@ python3 generate.py script.md --tts-command "my-tts {text} -o {output} -v {voice
 ## 参数说明
 
 ```
-python3 generate.py <脚本路径> [选项]
+python3 {baseDir}/scripts/generate.py <脚本路径> [选项]
 
 选项：
   -o, --output        输出 MP4 路径（必须显式传入；文章归属任务用 `content/articles/YYYY-MM-DD/resources/video/output.mp4`）
@@ -54,6 +73,7 @@ python3 generate.py <脚本路径> [选项]
   -w, --width         视频宽度（默认：1080）
   --height            视频高度（默认：1920，9:16）
   --images-dir        使用已有图片目录，跳过 Chrome 截图
+  --platform          输出平台：generic | wechat-channel（视频号适配）
   --tts-command       自定义 TTS 命令模板（占位符：{text} {output} {voice} {rate}）
   --keep-temp         保留临时文件（图片、音频、片段）
   --no-subs           不烧录字幕
@@ -96,12 +116,13 @@ python3 generate.py <脚本路径> [选项]
 **字幕**：屏幕显示文字
 ```
 
-完整模板：`templates/script-template.md`
+完整模板：`{baseDir}/templates/script-template.md`
 
 ## 工作流程
 
 1. 解析脚本 Markdown，提取各分段
 2. 每段口播 -> TTS 生成 mp3
 3. 每段字幕 -> HTML 模板截图生成 9:16 图片（或从 `--images-dir` 加载）
-4. 每张图 + 对应音频 -> FFmpeg 合成视频片段
-5. 拼接所有片段 -> 输出 MP4
+4. 如果 `platform=wechat-channel` 且发现横版截图，先包进 1080×1920 竖版容器，避免拉伸变形
+5. 每张图 + 对应音频 -> FFmpeg 合成视频片段
+6. 拼接所有片段 -> 输出 MP4

@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import argparse
 from pathlib import Path
+from PIL import Image
 
 # 路径自动检测（相对于脚本位置）
 SKILL_DIR = Path(__file__).resolve().parent.parent
@@ -32,6 +33,8 @@ DEFAULT_VOICE = "zh-CN-YunxiNeural"
 DEFAULT_RATE = "+0%"
 DEFAULT_OUTPUT = "tmp/video-output.mp4"
 TEMP_DIR = "tmp/video-gen-temp"
+DEFAULT_PLATFORM = "generic"
+WECHAT_CHANNEL_PLATFORM = "wechat-channel"
 
 
 def _detect_tts():
@@ -76,13 +79,16 @@ def parse_args():
     parser.add_argument("script", help="脚本 Markdown 文件路径")
     parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT, help=f"输出 MP4 路径（默认：{DEFAULT_OUTPUT}）")
     parser.add_argument("-v", "--voice", default=DEFAULT_VOICE, help=f"TTS 音色（默认：{DEFAULT_VOICE}）")
-    parser.add_argument("-r", "--rate", default=DEFAULT_RATE, help=f"语速（默认：{DEFAULT_RATE}，如 +10%、-10%）")
+    parser.add_argument("-r", "--rate", default=DEFAULT_RATE, help="TTS rate, e.g. +10%%, -10%%")
     parser.add_argument("-w", "--width", type=int, default=DEFAULT_WIDTH, help=f"视频宽度（默认：{DEFAULT_WIDTH}）")
     parser.add_argument("--height", type=int, default=DEFAULT_HEIGHT, help=f"视频高度（默认：{DEFAULT_HEIGHT}）")
     parser.add_argument("--keep-temp", action="store_true", help="保留临时文件")
     parser.add_argument("--no-subs", action="store_true", help="不烧录字幕（字幕已渲染在图片中）")
     parser.add_argument("--images-dir", default=None,
                         help="使用已有图片目录（slide_01.png, slide_02.png...），跳过图片生成")
+    parser.add_argument("--platform", default=DEFAULT_PLATFORM,
+                        choices=[DEFAULT_PLATFORM, WECHAT_CHANNEL_PLATFORM],
+                        help=f"输出平台（默认：{DEFAULT_PLATFORM}；视频号用：{WECHAT_CHANNEL_PLATFORM}）")
     parser.add_argument("--tts-command", default=None,
                         help="自定义 TTS 命令模板，占位符：{text} {output} {voice} {rate}。"
                              "默认自动检测 lh-edge-tts 或 EDGE_TTS_PATH 环境变量")
@@ -218,6 +224,53 @@ def generate_slide(subtitle, visual, output_path, width, height, index):
     return output_path
 
 
+def get_image_size(image_path):
+    with Image.open(image_path) as img:
+        return img.size
+
+
+def adapt_image_for_platform(image_path, output_path, width, height, platform):
+    """平台适配：横版图包进竖版容器，避免直接拉伸变形"""
+    src = Path(image_path)
+    dst = Path(output_path)
+
+    if platform != WECHAT_CHANNEL_PLATFORM:
+        shutil.copy2(src, dst)
+        return dst
+
+    src_width, src_height = get_image_size(src)
+
+    if src_width == width and src_height == height:
+        shutil.copy2(src, dst)
+        return dst
+
+    if src_width < src_height:
+        shutil.copy2(src, dst)
+        return dst
+
+    filter_complex = (
+        f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,"
+        f"crop={width}:{height},boxblur=20:10[bg];"
+        f"[0:v]scale=960:540:force_original_aspect_ratio=decrease[fg];"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2"
+    )
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(src),
+        "-filter_complex", filter_complex,
+        "-frames:v", "1",
+        str(dst),
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f" 图片平台适配失败：{result.stderr}")
+        sys.exit(1)
+
+    return dst
+
+
 def get_audio_duration(audio_path):
     """获取音频时长（秒）"""
     cmd = [
@@ -338,8 +391,8 @@ def main():
             if not src.exists():
                 print(f"    图片不存在：{src}")
                 sys.exit(1)
-            shutil.copy2(str(src), str(image_output))
-            print(f"    使用预制图片：{src}")
+            adapt_image_for_platform(str(src), str(image_output), args.width, args.height, args.platform)
+            print(f"    使用预制图片：{src}（platform={args.platform}）")
         else:
             print(f"    生成字幕卡...", end="", flush=True)
             generate_slide(section["subtitle"], section["visual"], str(image_output),
@@ -368,6 +421,7 @@ def main():
     print(f"\n{'='*60}")
     print(f"完成！输出：{args.output}")
     print(f"  总时长：{total_duration:.1f}秒")
+    print(f"  平台：{args.platform}")
     print(f"  画幅：{args.width}x{args.height}（{(args.height/args.width):.2f}:1）")
     print(f"{'='*60}\n")
 

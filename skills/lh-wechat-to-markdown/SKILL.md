@@ -1,4 +1,3 @@
-
 ---
 name: lh-wechat-to-markdown
 description: |
@@ -22,7 +21,15 @@ metadata:
 - 内容二次加工（需获得原创授权）
 - 离线阅读
 
-## 2. 基础用法
+## 2. 依赖安装（首次使用）
+
+```bash
+pip install -r {baseDir}/requirements.txt
+playwright install chromium
+```
+
+## 3. 基础用法
+
 ```bash
 # 默认：无头模式自动抓取公开文章
 python3 {baseDir}/scripts/main.py <微信文章链接>
@@ -35,16 +42,19 @@ python3 {baseDir}/scripts/main.py <微信文章链接> --download-images
 
 # 自定义输出目录
 python3 {baseDir}/scripts/main.py <微信文章链接> --output-dir ./wechat-articles/
+
+# 自定义页面加载超时（毫秒，默认 30000）
+python3 {baseDir}/scripts/main.py <微信文章链接> --timeout 60000
 ```
 
-## 3. 推荐工作流
+## 4. 推荐工作流
 - **默认场景（公开文章）**：直接使用默认无头模式，无需人工干预
 - **需要登录/有访问限制的文章**：使用 `--headed --wait` 参数，打开可视浏览器，完成登录/验证后按 Enter 触发抓取：
   ```bash
   python3 {baseDir}/scripts/main.py <微信文章链接> --headed --wait
   ```
 
-## 4. 输出结果与注意事项
+## 5. 输出结果与注意事项
 ### 输出文件
 1. Markdown 文件：包含标题、作者、发布时间等元数据 + 正文内容
 2. HTML 快照：与 Markdown 同名的 `*-captured.html` 文件，保存渲染后的原始页面
