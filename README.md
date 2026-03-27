@@ -2,21 +2,6 @@
 
 围绕 OpenClaw 的实用工具集，包含 skills 和 demos。
 
-## 目录结构
-
-```
-lh-openclaw-kit/
-└── skills/                        # OpenClaw 自定义 Skills
-    ├── feishu-send/               # 飞书文件/图片/文本/卡片发送（API 直发附件）
-    ├── feishu-bitable/            # 飞书多维表格读写
-    ├── feishu-doc/                # 飞书知识库文档同步与编辑
-    ├── lh-deepwiki/               # DeepWiki MCP 查询 GitHub 仓库文档
-    ├── lh-edge-tts/               # 文字转语音（多音色、语速调节、字幕导出）
-    ├── lh-html-to-image/          # HTML+CSS 生成图片（封面图/海报/卡片）
-    ├── lh-video-gen/              # Markdown 脚本一键生成竖版短视频
-    └── lh-wechat-to-markdown/     # 微信公众号文章抓取与 Markdown 转换
-```
-
 ## skills
 
 | Skill | 说明 |
