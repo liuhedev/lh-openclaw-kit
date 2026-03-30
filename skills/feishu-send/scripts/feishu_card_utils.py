@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """飞书卡片构造公共方法。"""
+from __future__ import annotations
 
 from feishu_client import get_token, resolve_receive_id, send_interactive_card
 

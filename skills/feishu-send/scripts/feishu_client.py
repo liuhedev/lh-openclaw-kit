@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """飞书通用发送能力。"""
+from __future__ import annotations
 
 import json
 import os
