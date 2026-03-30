@@ -92,6 +92,9 @@ def parse_args():
     parser.add_argument("--tts-command", default=None,
                         help="自定义 TTS 命令模板，占位符：{text} {output} {voice} {rate}。"
                              "默认自动检测 lh-edge-tts 或 EDGE_TTS_PATH 环境变量")
+    parser.add_argument("--template", default=None,
+                        help="HTML 模板文件名（不含 .html 后缀），位于 templates/ 目录。"
+                             "默认：slide（即 templates/slide.html）")
     return parser.parse_args()
 
 
@@ -110,8 +113,9 @@ def check_dependencies(args):
     if not args.images_dir:
         if not _detect_chrome():
             missing.append("Chrome（安装 Google Chrome，或设置 CHROME_PATH 环境变量）")
-        if not TEMPLATE_HTML.exists():
-            missing.append(f"模板文件（{TEMPLATE_HTML}）")
+        template_path = TEMPLATES_DIR / f"{args.template}.html" if args.template else TEMPLATE_HTML
+        if not template_path.exists():
+            missing.append(f"模板文件（{template_path}）")
 
     if missing:
         print("缺少依赖：\n  " + "\n  ".join(missing))
@@ -186,9 +190,10 @@ def generate_audio(dialogue, output_path, voice, rate, tts_command=None):
     return output_path
 
 
-def generate_slide(subtitle, visual, output_path, width, height, index):
+def generate_slide(subtitle, visual, output_path, width, height, index, template_path=None):
     """用 HTML 截图生成字幕卡片"""
-    with open(TEMPLATE_HTML, "r", encoding="utf-8") as f:
+    tpl = template_path if template_path else TEMPLATE_HTML
+    with open(tpl, "r", encoding="utf-8") as f:
         template = f.read()
 
     subtitle_html = subtitle.replace("\\n", "<br>").replace("\n", "<br>")
@@ -395,8 +400,9 @@ def main():
             print(f"    使用预制图片：{src}（platform={args.platform}）")
         else:
             print(f"    生成字幕卡...", end="", flush=True)
+            tpl_path = TEMPLATES_DIR / f"{args.template}.html" if args.template else None
             generate_slide(section["subtitle"], section["visual"], str(image_output),
-                           args.width, args.height, i)
+                           args.width, args.height, i, template_path=tpl_path)
             print(" done")
 
         # 合成片段

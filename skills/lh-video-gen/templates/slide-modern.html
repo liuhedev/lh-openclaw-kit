@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Slide Modern</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 1080px;
+      height: 1920px;
+      font-family: -apple-system, "PingFang SC", "SF Pro Display", "Noto Sans SC", "Microsoft YaHei", Inter, sans-serif;
+      background: #000000;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    /* ── 背景：深空光晕，极简有层次 ── */
+    .bg-glow {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 900px 600px at 50% 20%, rgba(255,255,255,0.03) 0%, transparent 70%),
+        radial-gradient(ellipse 700px 400px at 80% 80%, rgba(100,120,255,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 600px 350px at 20% 75%, rgba(255,80,80,0.03) 0%, transparent 60%);
+    }
+
+    /* ── 微细纹理噪点（纯CSS模拟，增加质感） ── */
+    .bg-noise {
+      position: absolute;
+      inset: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+    }
+
+    /* ── 顶部品牌栏 ── */
+    .brand {
+      position: absolute;
+      top: 72px;
+      left: 72px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 10;
+    }
+
+    .brand-icon {
+      font-size: 38px;
+      line-height: 1;
+    }
+
+    .brand-text {
+      font-size: 30px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 5px;
+    }
+
+    /* ── 顶部极细分割线 ── */
+    .top-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,0.0) 10%,
+        rgba(255,255,255,0.35) 40%,
+        rgba(255,255,255,0.55) 50%,
+        rgba(255,255,255,0.35) 60%,
+        rgba(255,255,255,0.0) 90%,
+        transparent 100%
+      );
+      z-index: 10;
+    }
+
+    /* ── 主内容区（下半段，含 visual + subtitle） ── */
+    .content {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      padding: 0 80px 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 48px;
+    }
+
+    /* ── 画面说明（可选） ── */
+    .visual-info {
+      display: none;
+      font-size: 30px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.38);
+      font-weight: 400;
+      letter-spacing: 1px;
+      border-left: 3px solid rgba(255, 255, 255, 0.15);
+      padding-left: 24px;
+    }
+
+    .visual-info.visible {
+      display: block;
+    }
+
+    /* ── 字幕：苹果发布会风，大字冲击 ── */
+    .subtitle {
+      font-size: 76px;
+      line-height: 1.55;
+      color: #FFFFFF;
+      font-weight: 700;
+      letter-spacing: 2px;
+      word-break: break-word;
+      text-shadow: 0 0 60px rgba(255,255,255,0.08);
+    }
+
+    /* ── 底部极细装饰线 ── */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255,255,255,0.0) 5%,
+        rgba(255,255,255,0.18) 30%,
+        rgba(255,255,255,0.18) 70%,
+        rgba(255,255,255,0.0) 95%,
+        transparent 100%
+      );
+      z-index: 10;
+    }
+
+    /* ── 页码（右下） ── */
+    .index {
+      position: absolute;
+      bottom: 72px;
+      right: 80px;
+      font-size: 32px;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.2);
+      letter-spacing: 2px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 背景层 -->
+  <div class="bg-glow"></div>
+  <div class="bg-noise"></div>
+  <div class="top-line"></div>
+  <div class="bottom-bar"></div>
+
+  <!-- 品牌标识 -->
+  <div class="brand">
+    <span class="brand-icon">🦞</span>
+    <span class="brand-text">龙虾哥</span>
+  </div>
+
+  <!-- 主内容（下半区，字幕为主） -->
+  <div class="content">
+    <div class="visual-info" id="visual"></div>
+    <div class="subtitle" id="subtitle"></div>
+  </div>
+
+  <!-- 页码 -->
+  <div class="index">{{INDEX}}</div>
+
+  <script>
+    // 字幕渲染
+    const subtitleText = '{{SUBTITLE}}';
+    const subtitleEl = document.getElementById('subtitle');
+    subtitleEl.innerHTML = subtitleText.replace(/\\n/g, '<br>');
+
+    // 画面说明（可选）
+    const visualText = '{{VISUAL}}';
+    const visualEl = document.getElementById('visual');
+    if (visualText && visualText.trim() !== '' && visualText !== '{{VISUAL}}') {
+      visualEl.innerHTML = visualText;
+      visualEl.classList.add('visible');
+    }
+  </script>
+</body>
+</html>
