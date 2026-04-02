@@ -124,7 +124,7 @@ async function captureUrl(args: Args): Promise<ConversionResult> {
     await cdp.send("Page.enable", {}, { sessionId });
 
     const isWechat = isWechatUrl(args.url);
-  if (args.wait) {
+    if (args.wait) {
     await waitForUserSignal();
   } else {
     console.log("Waiting for page to load...");
