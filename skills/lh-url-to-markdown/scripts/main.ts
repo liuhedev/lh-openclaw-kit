@@ -150,13 +150,14 @@ async function captureUrl(args: Args): Promise<ConversionResult> {
         await autoScroll(cdp, sessionId, SCROLL_MAX_STEPS, SCROLL_STEP_WAIT_MS);
         await sleep(POST_LOAD_DELAY_MS);
       }
+    }
 
-      console.log("Capturing page content...");
-      const { html } = await evaluateScript<{ html: string }>(
-        cdp, sessionId, absolutizeUrlsScript, args.timeout
-      );
+    console.log("Capturing page content...");
+    const { html } = await evaluateScript<{ html: string }>(
+      cdp, sessionId, absolutizeUrlsScript, args.timeout
+    );
 
-      return await extractContent(html, args.url);
+    return await extractContent(html, args.url);
   } finally {
     if (cdp) {
       try { await cdp.send("Browser.close", {}, { timeoutMs: 5_000 }); } catch {}
