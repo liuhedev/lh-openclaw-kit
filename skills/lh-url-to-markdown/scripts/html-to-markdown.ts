@@ -3,6 +3,15 @@ import { Readability } from "@mozilla/readability";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 
+function isWechatUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname === 'mp.weixin.qq.com' || hostname === 'weixin.sogou.com';
+  } catch {
+    return false;
+  }
+}
+
 export interface PageMetadata {
   url: string;
   title: string;
@@ -37,6 +46,11 @@ const MIN_CONTENT_LENGTH = 120;
 const GOOD_CONTENT_LENGTH = 900;
 
 const CONTENT_SELECTORS = [
+  // 微信公众号专属选择器
+  "#js_content",
+  ".rich_media_content",
+  ".weui-article",
+  // 通用选择器
   "article",
   "main article",
   "[role='main'] article",
@@ -910,9 +924,56 @@ function convertWithLegacyExtractor(html: string, baseMetadata: PageMetadata): C
 
 export async function extractContent(html: string, url: string): Promise<ConversionResult> {
   const capturedAt = new Date().toISOString();
-  const baseMetadata = extractMetadataFromHtml(html, url, capturedAt);
+  let processedHtml = html;
 
-  const defuddleResult = await tryDefuddleConversion(html, url, baseMetadata);
+  // 微信文章预处理
+  if (isWechatUrl(url)) {
+    const document = parseHTML(processedHtml).document as unknown as Document;
+    
+    // 移除微信无关元素
+    const removeSelectors = [
+      ".rich_media_meta",
+      ".original_area",
+      ".qr_code_pc",
+      ".weui-wa-hotarea",
+      ".praise_area",
+      ".comment_area",
+      ".recommend_area",
+      "#js_pc_qr_code",
+      "#js_tags",
+      ".wechat-shadow",
+      ".share-bar",
+      ".like-bar",
+    ];
+    for (const selector of removeSelectors) {
+      const el = document.querySelector(selector);
+      if (el) el.remove();
+    }
+
+    // 微信代码块特殊处理
+    const codeElements = document.querySelectorAll(".code-snippet__line, pre code");
+    codeElements.forEach(code => {
+      const pre = code.closest("pre");
+      if (pre && !pre.getAttribute("class")) {
+        pre.setAttribute("class", "code");
+      }
+    });
+
+    // 微信表格特殊处理
+    const tableElements = document.querySelectorAll("table");
+    tableElements.forEach(table => {
+      table.setAttribute("border", "1");
+      table.setAttribute("cellpadding", "4");
+      table.setAttribute("cellspacing", "0");
+    });
+
+    // 序列化处理后的HTML
+    processedHtml = document.documentElement.outerHTML;
+  }
+
+  const baseMetadata = extractMetadataFromHtml(processedHtml, url, capturedAt);
+
+  const defuddleResult = await tryDefuddleConversion(processedHtml, url, baseMetadata);
   if (defuddleResult.ok) {
     if (shouldCompareWithLegacy(defuddleResult.result.markdown)) {
       const legacyResult = convertWithLegacyExtractor(html, baseMetadata);
@@ -930,7 +991,7 @@ export async function extractContent(html: string, url: string): Promise<Convers
     return defuddleResult.result;
   }
 
-  const fallbackResult = convertWithLegacyExtractor(html, baseMetadata);
+  const fallbackResult = convertWithLegacyExtractor(processedHtml, baseMetadata);
   return {
     ...fallbackResult,
     fallbackReason: defuddleResult.reason,

@@ -52,6 +52,15 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
+function isWechatUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname === 'mp.weixin.qq.com' || hostname === 'weixin.sogou.com';
+  } catch {
+    return false;
+  }
+}
+
 function generateSlug(title: string, url: string): string {
   const text = title || new URL(url).pathname.replace(/\//g, "-");
   return text
@@ -114,10 +123,23 @@ async function captureUrl(args: Args): Promise<ConversionResult> {
     await cdp.send("Network.enable", {}, { sessionId });
     await cdp.send("Page.enable", {}, { sessionId });
 
-    if (args.wait) {
-      await waitForUserSignal();
+    const isWechat = isWechatUrl(args.url);
+  if (args.wait) {
+    await waitForUserSignal();
+  } else {
+    console.log("Waiting for page to load...");
+    if (isWechat) {
+      // 微信文章需要更长的加载时间和滚动等待
+      await Promise.race([
+        waitForPageLoad(cdp, sessionId, 30_000),
+        sleep(15_000)
+      ]);
+      await waitForNetworkIdle(cdp, sessionId, NETWORK_IDLE_TIMEOUT_MS * 2);
+      await sleep(POST_LOAD_DELAY_MS * 2);
+      console.log("Scrolling to trigger lazy load (微信文章)...");
+      await autoScroll(cdp, sessionId, SCROLL_MAX_STEPS * 2, SCROLL_STEP_WAIT_MS * 2);
+      await sleep(POST_LOAD_DELAY_MS * 3);
     } else {
-      console.log("Waiting for page to load...");
       await Promise.race([
         waitForPageLoad(cdp, sessionId, 15_000),
         sleep(8_000)
