@@ -125,38 +125,38 @@ async function captureUrl(args: Args): Promise<ConversionResult> {
 
     const isWechat = isWechatUrl(args.url);
     if (args.wait) {
-    await waitForUserSignal();
-  } else {
-    console.log("Waiting for page to load...");
-    if (isWechat) {
-      // 微信文章需要更长的加载时间和滚动等待
-      await Promise.race([
-        waitForPageLoad(cdp, sessionId, 30_000),
-        sleep(15_000)
-      ]);
-      await waitForNetworkIdle(cdp, sessionId, NETWORK_IDLE_TIMEOUT_MS * 2);
-      await sleep(POST_LOAD_DELAY_MS * 2);
-      console.log("Scrolling to trigger lazy load (微信文章)...");
-      await autoScroll(cdp, sessionId, SCROLL_MAX_STEPS * 2, SCROLL_STEP_WAIT_MS * 2);
-      await sleep(POST_LOAD_DELAY_MS * 3);
+      await waitForUserSignal();
     } else {
-      await Promise.race([
-        waitForPageLoad(cdp, sessionId, 15_000),
-        sleep(8_000)
-      ]);
-      await waitForNetworkIdle(cdp, sessionId, NETWORK_IDLE_TIMEOUT_MS);
-      await sleep(POST_LOAD_DELAY_MS);
-      console.log("Scrolling to trigger lazy load...");
-      await autoScroll(cdp, sessionId, SCROLL_MAX_STEPS, SCROLL_STEP_WAIT_MS);
-      await sleep(POST_LOAD_DELAY_MS);
-    }
+      console.log("Waiting for page to load...");
+      if (isWechat) {
+        // 微信文章需要更长的加载时间和滚动等待
+        await Promise.race([
+          waitForPageLoad(cdp, sessionId, 30_000),
+          sleep(15_000)
+        ]);
+        await waitForNetworkIdle(cdp, sessionId, NETWORK_IDLE_TIMEOUT_MS * 2);
+        await sleep(POST_LOAD_DELAY_MS * 2);
+        console.log("Scrolling to trigger lazy load (微信文章)...");
+        await autoScroll(cdp, sessionId, SCROLL_MAX_STEPS * 2, SCROLL_STEP_WAIT_MS * 2);
+        await sleep(POST_LOAD_DELAY_MS * 3);
+      } else {
+        await Promise.race([
+          waitForPageLoad(cdp, sessionId, 15_000),
+          sleep(8_000)
+        ]);
+        await waitForNetworkIdle(cdp, sessionId, NETWORK_IDLE_TIMEOUT_MS);
+        await sleep(POST_LOAD_DELAY_MS);
+        console.log("Scrolling to trigger lazy load...");
+        await autoScroll(cdp, sessionId, SCROLL_MAX_STEPS, SCROLL_STEP_WAIT_MS);
+        await sleep(POST_LOAD_DELAY_MS);
+      }
 
-    console.log("Capturing page content...");
-    const { html } = await evaluateScript<{ html: string }>(
-      cdp, sessionId, absolutizeUrlsScript, args.timeout
-    );
+      console.log("Capturing page content...");
+      const { html } = await evaluateScript<{ html: string }>(
+        cdp, sessionId, absolutizeUrlsScript, args.timeout
+      );
 
-    return await extractContent(html, args.url);
+      return await extractContent(html, args.url);
   } finally {
     if (cdp) {
       try { await cdp.send("Browser.close", {}, { timeoutMs: 5_000 }); } catch {}
