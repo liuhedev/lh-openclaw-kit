@@ -4,7 +4,7 @@ import path from "node:path";
 import process from "node:process";
 
 import { CdpConnection, getFreePort, launchChrome, waitForChromeDebugPort, waitForNetworkIdle, waitForPageLoad, autoScroll, evaluateScript, killChrome } from "./cdp.js";
-import { absolutizeUrlsScript, extractContent, createMarkdownDocument, type ConversionResult } from "./html-to-markdown.js";
+import { absolutizeUrlsScript, extractContent, createMarkdownDocument, isWechatUrl, type ConversionResult } from "./html-to-markdown.js";
 import { localizeMarkdownMedia, countRemoteMedia } from "./media-localizer.js";
 import { resolveUrlToMarkdownDataDir } from "./paths.js";
 import { DEFAULT_TIMEOUT_MS, CDP_CONNECT_TIMEOUT_MS, NETWORK_IDLE_TIMEOUT_MS, POST_LOAD_DELAY_MS, SCROLL_STEP_WAIT_MS, SCROLL_MAX_STEPS } from "./constants.js";
@@ -50,15 +50,6 @@ function parseArgs(argv: string[]): Args {
     }
   }
   return args;
-}
-
-function isWechatUrl(url: string): boolean {
-  try {
-    const hostname = new URL(url).hostname;
-    return hostname === 'mp.weixin.qq.com' || hostname === 'weixin.sogou.com';
-  } catch {
-    return false;
-  }
 }
 
 function generateSlug(title: string, url: string): string {

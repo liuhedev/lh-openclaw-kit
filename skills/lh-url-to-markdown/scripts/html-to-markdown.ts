@@ -3,7 +3,7 @@ import { Readability } from "@mozilla/readability";
 import TurndownService from "turndown";
 import { gfm } from "turndown-plugin-gfm";
 
-function isWechatUrl(url: string): boolean {
+export function isWechatUrl(url: string): boolean {
   try {
     const hostname = new URL(url).hostname;
     return hostname === 'mp.weixin.qq.com' || hostname === 'weixin.sogou.com';
