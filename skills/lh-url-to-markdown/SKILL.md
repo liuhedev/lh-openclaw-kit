@@ -26,10 +26,14 @@ Fetches any URL via Chrome CDP, saves the rendered HTML snapshot, and converts i
 4. Replace all `{baseDir}` and `${BUN_X}` in this document with actual values
 
 **Script Reference**:
-| Script | Purpose |
-|--------|---------|
-| `scripts/main.ts` | CLI entry point for URL fetching |
-| `scripts/html-to-markdown.ts` | Defuddle-first conversion with automatic legacy fallback |
+| Script | Role |
+|--------|------|
+| `scripts/main.ts` | **Entry point — the only script to run directly** |
+| `scripts/html-to-markdown.ts` | Internal — HTML→Markdown（Defuddle-first，自动降级到 legacy 路径） |
+| `scripts/cdp.ts` | Internal — Chrome CDP 启动与页面捕获 |
+| `scripts/media-localizer.ts` | Internal — 图片/视频下载与 Markdown 链接重写 |
+| `scripts/paths.ts` | Internal — 跨平台路径解析 |
+| `scripts/constants.ts` | Internal — 超时时间与 User-Agent 常量 |
 
 ## Preferences (EXTEND.md)
 

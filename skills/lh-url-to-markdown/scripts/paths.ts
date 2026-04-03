@@ -23,7 +23,7 @@ export function resolveUrlToMarkdownDataDir(): string {
 }
 
 export function resolveUrlToMarkdownChromeProfileDir(): string {
-  const override = process.env.BAOYU_CHROME_PROFILE_DIR?.trim() || process.env.URL_CHROME_PROFILE_DIR?.trim();
+  const override = process.env.URL_CHROME_PROFILE_DIR?.trim();
   if (override) return path.resolve(override);
   return path.join(resolveUserDataRoot(), APP_DATA_DIR, PROFILE_DIR_NAME);
 }
