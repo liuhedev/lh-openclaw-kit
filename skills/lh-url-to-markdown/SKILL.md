@@ -30,10 +30,8 @@ Fetches any URL via Chrome CDP, saves the rendered HTML snapshot, and converts i
 |--------|------|
 | `scripts/main.ts` | **Entry point — the only script to run directly** |
 | `scripts/html-to-markdown.ts` | Internal — HTML→Markdown（Defuddle-first，自动降级到 legacy 路径） |
-| `scripts/cdp.ts` | Internal — Chrome CDP 启动与页面捕获 |
+| `scripts/cdp.ts` | Internal — Chrome CDP 启动与页面捕获、跨平台路径解析、超时常量 |
 | `scripts/media-localizer.ts` | Internal — 图片/视频下载与 Markdown 链接重写 |
-| `scripts/paths.ts` | Internal — 跨平台路径解析 |
-| `scripts/constants.ts` | Internal — 超时时间与 User-Agent 常量 |
 
 ## Preferences (EXTEND.md)
 

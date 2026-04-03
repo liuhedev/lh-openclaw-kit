@@ -3,11 +3,9 @@ import { writeFile, mkdir, access } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
-import { CdpConnection, getFreePort, launchChrome, waitForChromeDebugPort, waitForNetworkIdle, waitForPageLoad, autoScroll, evaluateScript, killChrome } from "./cdp.js";
+import { CdpConnection, getFreePort, launchChrome, waitForChromeDebugPort, waitForNetworkIdle, waitForPageLoad, autoScroll, evaluateScript, killChrome, resolveUrlToMarkdownDataDir, DEFAULT_TIMEOUT_MS, CDP_CONNECT_TIMEOUT_MS, NETWORK_IDLE_TIMEOUT_MS, POST_LOAD_DELAY_MS, SCROLL_STEP_WAIT_MS, SCROLL_MAX_STEPS } from "./cdp.js";
 import { absolutizeUrlsScript, extractContent, createMarkdownDocument, isWechatUrl, type ConversionResult } from "./html-to-markdown.js";
 import { localizeMarkdownMedia, countRemoteMedia } from "./media-localizer.js";
-import { resolveUrlToMarkdownDataDir } from "./paths.js";
-import { DEFAULT_TIMEOUT_MS, CDP_CONNECT_TIMEOUT_MS, NETWORK_IDLE_TIMEOUT_MS, POST_LOAD_DELAY_MS, SCROLL_STEP_WAIT_MS, SCROLL_MAX_STEPS } from "./constants.js";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
