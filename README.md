@@ -1,6 +1,6 @@
 # lh-openclaw-kit
 
-围绕 OpenClaw 的实用工具集，包含 skills 和 demos。
+围绕 OpenClaw 的 Agent Skills 集合，本仓库仅包含 `skills/` 下的各技能目录。
 
 ## skills
 
@@ -12,8 +12,10 @@
 | [lh-deepwiki](skills/lh-deepwiki/) | 通过 DeepWiki MCP 查询 GitHub 仓库文档结构与 AI 问答 |
 | [lh-edge-tts](skills/lh-edge-tts/) | 基于微软 Edge TTS 的文字转语音工具，支持多音色、语速调节和字幕导出 |
 | [lh-html-to-image](skills/lh-html-to-image/) | 通过 Chrome 无头截图将 HTML+CSS 渲染为独立图片，适用于封面图、海报、信息卡片 |
+| [lh-url-to-markdown](skills/lh-url-to-markdown/) | 通过 Chrome CDP 抓取任意 URL 并转为 Markdown，保存 HTML 快照，支持媒体本地化；可配合登录/等待用户信号 |
 | [lh-video-gen](skills/lh-video-gen/) | 从 Markdown 脚本一键生成竖版短视频（9:16），内部联动 lh-edge-tts 和 lh-html-to-image |
-| [lh-wechat-to-markdown](skills/lh-wechat-to-markdown/) | 微信公众号文章抓取与 Markdown 转换，自动修复图片懒加载、下载图片、保存 HTML 快照 |
+| [aliyun-sls-query](skills/aliyun-sls-query/) | 查询阿里云日志服务（SLS），支持关键词搜索、SQL 分析、多环境 profile、时间范围过滤 |
+| [send-email](skills/send-email/) | 通过 SMTP 发信（企业微信/QQ/163/Gmail/Outlook 等），Markdown 正文转 HTML，支持多附件、抄送、HTML 签名 |
 
 ## 贡献
 
