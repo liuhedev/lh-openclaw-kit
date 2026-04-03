@@ -17,6 +17,18 @@
 | [aliyun-sls-query](skills/aliyun-sls-query/) | 查询阿里云日志服务（SLS），支持关键词搜索、SQL 分析、多环境 profile、时间范围过滤 |
 | [send-email](skills/send-email/) | 通过 SMTP 发信（企业微信/QQ/163/Gmail/Outlook 等），Markdown 正文转 HTML，支持多附件、抄送、HTML 签名 |
 
+## 安装
+
+通过 [skills CLI](https://skills.sh) 一键安装到任意 AI Agent：
+
+```bash
+# 安装全部 skills
+npx skills add liuhedev/lh-openclaw-kit
+
+# 安装指定 skill
+npx skills add liuhedev/lh-openclaw-kit --skill aliyun-sls-query
+```
+
 ## 贡献
 
 欢迎 PR，敏感信息（密钥、token）请通过环境变量传入，不要硬编码。
