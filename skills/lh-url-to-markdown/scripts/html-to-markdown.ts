@@ -1015,11 +1015,68 @@ export function formatMetadataYaml(meta: PageMetadata): string {
   return lines.join("\n");
 }
 
+// 微信公众号文章专属后处理
+function cleanWechatMarkdown(markdown: string): string {
+  let cleaned = markdown;
+
+  // 1. 自动过滤无意义的连续数字空列表（如 "1. 1\n2. 2"这类DOM异常产生的内容）
+  cleaned = cleaned.replace(/(^|\n)(\d+\.\s*\d+\s*)(?=\n|$)/g, '');
+  // 处理连续多行的数字列表
+  cleaned = cleaned.replace(/((?:^|\n)\d+\.\s*\d+\s*){2,}/g, '');
+
+  // 2. 自动移除公众号底部固定提示
+  // 账号名称相关
+  cleaned = cleaned.replace(/(^|\n).*?公众号.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?微信公众号.*?(?=\n|$)/gi, '');
+  
+  // "向上滑动看下一个" 及其变体
+  cleaned = cleaned.replace(/(^|\n).*?向上滑动.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?上滑.*?(?=\n|$)/gi, '');
+  
+  // "分享收藏点赞在看" 等通用尾部元素
+  cleaned = cleaned.replace(/(^|\n).*?分享.*?收藏.*?点赞.*?在看.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?分享.*?收藏.*?点赞.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?点赞.*?在看.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?分享.*?在看.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?收藏.*?在看.*?(?=\n|$)/gi, '');
+  
+  // 其他常见的尾部元素
+  cleaned = cleaned.replace(/(^|\n).*?阅读原文.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?点击关注.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?欢迎关注.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?往期推荐.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?猜你喜欢.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?相关阅读.*?(?=\n|$)/gi, '');
+  cleaned = cleaned.replace(/(^|\n).*?点击查看.*?(?=\n|$)/gi, '');
+  
+  // 3. 自动清理多余空行和无效占位符
+  // 清理多余的空行
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  // 清理行尾的空白
+  cleaned = cleaned.replace(/[ \t]+\n/g, '\n');
+  
+  // 清理无效的占位符和仅包含符号的行
+  cleaned = cleaned.replace(/(^|\n)[\s\-\*\.\#]+(?=\n|$)/g, '');
+  
+  // 再次清理多余的空行
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  return cleaned.trim();
+}
+
 export function createMarkdownDocument(result: ConversionResult): string {
   const yaml = formatMetadataYaml(result.metadata);
   const escapedTitle = result.metadata.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const titleRegex = new RegExp(`^#\\s+${escapedTitle}\\s*(\\n|$)`, "i");
   const hasTitle = titleRegex.test(result.markdown.trimStart());
   const title = result.metadata.title && !hasTitle ? `\n\n# ${result.metadata.title}\n\n` : "\n\n";
-  return yaml + title + result.markdown;
+  
+  // 微信公众号文章专属后处理
+  let finalMarkdown = result.markdown;
+  if (isWechatUrl(result.metadata.url)) {
+    finalMarkdown = cleanWechatMarkdown(finalMarkdown);
+  }
+  
+  return yaml + title + finalMarkdown;
 }
