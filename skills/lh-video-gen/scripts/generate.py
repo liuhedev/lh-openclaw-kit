@@ -162,30 +162,38 @@ def parse_script(script_path):
     return sections
 
 
-def generate_audio(dialogue, output_path, voice, rate, tts_command=None):
-    """生成配音"""
-    if tts_command:
-        cmd_str = tts_command.format(
-            text=shlex.quote(dialogue),
-            output=shlex.quote(output_path),
-            voice=shlex.quote(voice),
-            rate=shlex.quote(rate),
-        )
-        result = subprocess.run(cmd_str, shell=True, capture_output=True, text=True)
-    else:
-        tts_path = _detect_tts()
-        cmd = [
-            "python3", tts_path,
-            dialogue,
-            "-v", voice,
-            "-r", rate,
-            "-o", output_path,
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+def generate_audio(dialogue, output_path, voice, rate, tts_command=None, max_retries=3):
+    """生成配音（带重试）"""
+    import time as _time
+    for attempt in range(1, max_retries + 1):
+        if tts_command:
+            cmd_str = tts_command.format(
+                text=shlex.quote(dialogue),
+                output=shlex.quote(output_path),
+                voice=shlex.quote(voice),
+                rate=shlex.quote(rate),
+            )
+            result = subprocess.run(cmd_str, shell=True, capture_output=True, text=True)
+        else:
+            tts_path = _detect_tts()
+            cmd = [
+                "python3", tts_path,
+                dialogue,
+                "-v", voice,
+                "-r", rate,
+                "-o", output_path,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
 
-    if result.returncode != 0:
-        print(f" TTS 生成失败：{result.stderr}")
-        sys.exit(1)
+        if result.returncode == 0:
+            return output_path
+
+        if attempt < max_retries:
+            print(f" TTS 失败（第 {attempt} 次），{2 * attempt}s 后重试...")
+            _time.sleep(2 * attempt)
+        else:
+            print(f" TTS 生成失败（已重试 {max_retries} 次）：{result.stderr}")
+            sys.exit(1)
 
     return output_path
 
