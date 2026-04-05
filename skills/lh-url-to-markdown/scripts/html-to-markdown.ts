@@ -1019,27 +1019,43 @@ export function formatMetadataYaml(meta: PageMetadata): string {
 function cleanWechatMarkdown(markdown: string): string {
   let cleaned = markdown;
 
+  // 0. 截断：移除 "--end--" 及其之后的所有内容
+  cleaned = cleaned.replace(/\\?-{2,}end\\?-{2,}[\s\S]*$/i, '');
+
   // 1. 自动过滤无意义的连续数字空列表（如 "1. 1\n2. 2"这类DOM异常产生的内容）
   cleaned = cleaned.replace(/(^|\n)(\d+\.\s*\d+\s*)(?=\n|$)/g, '');
   // 处理连续多行的数字列表
   cleaned = cleaned.replace(/((?:^|\n)\d+\.\s*\d+\s*){2,}/g, '');
 
-  // 2. 自动移除公众号底部固定提示
+  // 2. 移除文章开头的引导性内容（在标题之后、正文之前）
+  // 移除发布日期行（如 "*2026年4月5日 02:12*"）
+  cleaned = cleaned.replace(/(^|\n)\*?\d{4}年\d{1,2}月\d{1,2}日[^*\n]*\*?(?=\n|$)/g, '');
+  // 移除关注/星标引导（如 "↑阅读之前记得关注+星标⭐️"）
+  cleaned = cleaned.replace(/(^|\n).*?(?:关注\+?星标|星标\+?关注|记得关注|记得⭐|第一时间接收).*?(?=\n|$)/g, '');
+  // 移除 "记得⭐️我" 类的推广
+  cleaned = cleaned.replace(/(^|\n).*?记得⭐.*?(?=\n|$)/g, '');
+  // 移除紧跟标题后的封面图（标题行后第一个独立图片行，仅当它是 cover 类图片）
+  cleaned = cleaned.replace(/(^# .+\n)\n*!\[cover_image\][^\n]*\n/m, '$1\n');
+
+  // 3. 自动移除公众号底部固定提示
   // 账号名称相关
   cleaned = cleaned.replace(/(^|\n).*?公众号.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?微信公众号.*?(?=\n|$)/gi, '');
-  
-  // "向上滑动看下一个" 及其变体
-  cleaned = cleaned.replace(/(^|\n).*?向上滑动.*?(?=\n|$)/gi, '');
+
+  // "向上滑动看下一个"/"继续滑动看下一个" 及其变体，以及其后的所有内容
+  cleaned = cleaned.replace(/(^|\n).*?(?:继续|向上)滑动.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?上滑.*?(?=\n|$)/gi, '');
-  
+
   // "分享收藏点赞在看" 等通用尾部元素
   cleaned = cleaned.replace(/(^|\n).*?分享.*?收藏.*?点赞.*?在看.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?分享.*?收藏.*?点赞.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?点赞.*?在看.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?分享.*?在看.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?收藏.*?在看.*?(?=\n|$)/gi, '');
-  
+
+  // "点赞转发推荐评论" 等变体
+  cleaned = cleaned.replace(/(^|\n).*?(?:点赞|转发|推荐|评论){2,}.*?(?=\n|$)/gi, '');
+
   // 其他常见的尾部元素
   cleaned = cleaned.replace(/(^|\n).*?阅读原文.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?点击关注.*?(?=\n|$)/gi, '');
@@ -1048,20 +1064,17 @@ function cleanWechatMarkdown(markdown: string): string {
   cleaned = cleaned.replace(/(^|\n).*?猜你喜欢.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?相关阅读.*?(?=\n|$)/gi, '');
   cleaned = cleaned.replace(/(^|\n).*?点击查看.*?(?=\n|$)/gi, '');
-  
-  // 3. 自动清理多余空行和无效占位符
-  // 清理多余的空行
+
+  // 4. 移除文章末尾残余的孤立公众号名片（图片+短文本的组合）
+  // 匹配末尾的 "!\[...\](...)\n\n短文本\n\n!\[...\](...)\n\n短文本" 模式
+  cleaned = cleaned.replace(/(?:\n!\[[^\]]*\]\([^)]*\)\s*\n+.{1,20}\s*){2,}$/g, '');
+
+  // 5. 自动清理多余空行和无效占位符
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-  
-  // 清理行尾的空白
   cleaned = cleaned.replace(/[ \t]+\n/g, '\n');
-  
-  // 清理无效的占位符和仅包含符号的行
   cleaned = cleaned.replace(/(^|\n)[\s\-\*\.\#]+(?=\n|$)/g, '');
-  
-  // 再次清理多余的空行
   cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-  
+
   return cleaned.trim();
 }
 

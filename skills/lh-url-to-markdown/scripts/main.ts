@@ -74,17 +74,16 @@ function deriveHtmlSnapshotPath(markdownPath: string): string {
 }
 
 async function generateOutputPath(url: string, title: string, outputDir?: string): Promise<string> {
-  const domain = new URL(url).hostname.replace(/^www\./, "");
   const slug = generateSlug(title, url);
   const dataDir = outputDir ? path.resolve(outputDir) : resolveUrlToMarkdownDataDir();
-  const basePath = path.join(dataDir, domain, `${slug}.md`);
+  const basePath = path.join(dataDir, `${slug}.md`);
 
   if (!(await fileExists(basePath))) {
     return basePath;
   }
 
   const timestampSlug = `${slug}-${formatTimestamp()}`;
-  return path.join(dataDir, domain, `${timestampSlug}.md`);
+  return path.join(dataDir, `${timestampSlug}.md`);
 }
 
 async function waitForUserSignal(): Promise<void> {

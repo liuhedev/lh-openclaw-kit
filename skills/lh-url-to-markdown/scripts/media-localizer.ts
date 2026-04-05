@@ -267,13 +267,14 @@ export async function localizeMarkdownMedia(
 
       const outputExtension = resolveOutputExtension(contentType, extension, kind);
       const nextIndex = kind === "image" ? downloadedImages + 1 : downloadedVideos + 1;
-      const dirName = kind === "image" ? "imgs" : "videos";
-      const targetDir = path.join(markdownDir, dirName);
+      const markdownBasename = path.basename(options.markdownPath, path.extname(options.markdownPath));
+      const assetDir = path.posix.join("assets", markdownBasename);
+      const targetDir = path.join(markdownDir, "assets", markdownBasename);
       await mkdir(targetDir, { recursive: true });
 
       const fileName = buildFileName(kind, nextIndex, sourceUrl, outputExtension);
       const absolutePath = path.join(targetDir, fileName);
-      const relativePath = path.posix.join(dirName, fileName);
+      const relativePath = path.posix.join(assetDir, fileName);
       const bytes = Buffer.from(await response.arrayBuffer());
       await writeFile(absolutePath, bytes);
       replacements.set(candidate.url, relativePath);
@@ -293,8 +294,8 @@ export async function localizeMarkdownMedia(
     markdown: rewriteMarkdownMediaLinks(markdown, replacements),
     downloadedImages,
     downloadedVideos,
-    imageDir: downloadedImages > 0 ? path.join(markdownDir, "imgs") : null,
-    videoDir: downloadedVideos > 0 ? path.join(markdownDir, "videos") : null,
+    imageDir: downloadedImages > 0 ? path.join(markdownDir, "assets", path.basename(options.markdownPath, path.extname(options.markdownPath))) : null,
+    videoDir: downloadedVideos > 0 ? path.join(markdownDir, "assets", path.basename(options.markdownPath, path.extname(options.markdownPath))) : null,
   };
 }
 
