@@ -1019,8 +1019,13 @@ export function formatMetadataYaml(meta: PageMetadata): string {
 function cleanWechatMarkdown(markdown: string): string {
   let cleaned = markdown;
 
-  // 0. 截断：移除 "--end--" 及其之后的所有内容
-  cleaned = cleaned.replace(/\\?-{2,}end\\?-{2,}[\s\S]*$/i, '');
+  // 0. 截断：识别"结束标记行"及其之后的全部内容
+  //    该行必须由装饰符（*、_、·、-、=、━、─、.、空白）包裹 END 构成，且整行只含这些内容
+  //    覆盖：**·END·**、--end--、··END··、== END ==、**-- END --**、\-\-end\-\- 等变体
+  cleaned = cleaned.replace(
+    /(^|\n)[ \t]*(?:\\?[*_~])*[ \t]*[\\·\-=━─.]*[ \t]*END[ \t]*[\\·\-=━─.]*[ \t]*(?:\\?[*_~])*[ \t]*(?=\n|$)[\s\S]*$/i,
+    ''
+  );
 
   // 1. 自动过滤无意义的连续数字空列表（如 "1. 1\n2. 2"这类DOM异常产生的内容）
   cleaned = cleaned.replace(/(^|\n)(\d+\.\s*\d+\s*)(?=\n|$)/g, '');
