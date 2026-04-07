@@ -201,6 +201,17 @@ function collectMarkdownLinkCandidates(markdown: string): MarkdownLinkCandidate[
   return candidates;
 }
 
+// 对本地相对路径做 markdown 链接级转义：
+// CommonMark/Obsidian 在 `(...)` 内遇到空格或未转义的括号就会截断 URL，
+// 导致"文件名包含空格的 assets 目录"整条图片链接失效。
+// YAML frontmatter 在引号里可以容纳字面空格，所以仅在 markdown 链接处编码。
+function encodeLocalPathForMarkdown(localPath: string): string {
+  return localPath
+    .replace(/ /g, "%20")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29");
+}
+
 function rewriteMarkdownMediaLinks(markdown: string, replacements: Map<string, string>): string {
   if (replacements.size === 0) return markdown;
   MARKDOWN_LINK_RE.lastIndex = 0;
@@ -208,7 +219,7 @@ function rewriteMarkdownMediaLinks(markdown: string, replacements: Map<string, s
   let result = markdown.replace(MARKDOWN_LINK_RE, (full, label, _openAngle, rawUrl) => {
     const localPath = replacements.get(rawUrl);
     if (!localPath) return full;
-    return `${label}(${localPath})`;
+    return `${label}(${encodeLocalPathForMarkdown(localPath)})`;
   });
 
   result = result.replace(FRONTMATTER_COVER_RE, (full, prefix, rawUrl, suffix) => {

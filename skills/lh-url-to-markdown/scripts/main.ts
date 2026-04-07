@@ -51,14 +51,14 @@ function parseArgs(argv: string[]): Args {
 }
 
 function generateSlug(title: string, url: string): string {
-  const text = title || new URL(url).pathname.replace(/\//g, "-");
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 50) || "page";
+  const raw = (title || new URL(url).pathname.replace(/\//g, "-")).trim();
+  // 仅剥离文件系统非法字符（跨平台安全集）和控制字符，保留中文/标题原貌
+  const cleaned = raw
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  // 字符级截断（80 字符上限，保留可读性，避免 UTF-8 字节超限）
+  return cleaned.slice(0, 80) || "page";
 }
 
 function formatTimestamp(): string {

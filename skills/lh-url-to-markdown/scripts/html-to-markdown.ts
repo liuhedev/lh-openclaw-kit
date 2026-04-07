@@ -1039,8 +1039,9 @@ function cleanWechatMarkdown(markdown: string): string {
   cleaned = cleaned.replace(/(^|\n).*?(?:关注\+?星标|星标\+?关注|记得关注|记得⭐|第一时间接收).*?(?=\n|$)/g, '');
   // 移除 "记得⭐️我" 类的推广
   cleaned = cleaned.replace(/(^|\n).*?记得⭐.*?(?=\n|$)/g, '');
-  // 移除紧跟标题后的封面图（标题行后第一个独立图片行，仅当它是 cover 类图片）
-  cleaned = cleaned.replace(/(^# .+\n)\n*!\[cover_image\][^\n]*\n/m, '$1\n');
+  // 移除封面图（alt 文本为 cover_image 的独立图片行）
+  // coverImage 已存在于 frontmatter，正文不需要重复展示
+  cleaned = cleaned.replace(/(^|\n)[ \t]*!\[cover_image\][^\n]*(?=\n|$)/g, '$1');
 
   // 3. 自动移除公众号底部固定提示
   // 账号名称相关
