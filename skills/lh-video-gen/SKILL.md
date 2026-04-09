@@ -38,6 +38,20 @@ python3 {baseDir}/scripts/generate.py script.md --images-dir content/articles/YY
 
 图片命名规则：`slide_01.png`, `slide_02.png`...，与脚本分段一一对应。
 
+### 使用前端幻灯片画面（推荐用于视频号）
+
+```bash
+python3 {baseDir}/scripts/generate.py script.md \
+  --visual-mode frontend \
+  --platform wechat-channel \
+  -o content/articles/YYYY-MM-DD/resources/video/output-wechat.mp4
+```
+
+行为：
+- 先按 `frontend-slides` 思路把每段脚本组织成多页 HTML 幻灯片
+- 再按 `frontend-design` 风格生成高质感页面
+- 最后自动截图为 `slide_01.png`... 并继续合成视频
+
 ### 适配微信视频号（处理横版截图，避免变形）
 
 ```bash
@@ -75,6 +89,8 @@ python3 {baseDir}/scripts/generate.py <脚本路径> [选项]
   --images-dir        使用已有图片目录，跳过 Chrome 截图
   --platform          输出平台：generic | wechat-channel（视频号适配）
   --tts-command       自定义 TTS 命令模板（占位符：{text} {output} {voice} {rate}）
+  --visual-mode       画面模式：basic | frontend | auto
+  --frontend-dir      frontend 模式输出目录（HTML 幻灯片 + render 图片）
   --keep-temp         保留临时文件（图片、音频、片段）
   --no-subs           不烧录字幕
 ```
@@ -93,6 +109,8 @@ python3 {baseDir}/scripts/generate.py <脚本路径> [选项]
 
 - **lh-edge-tts**：配套音频能力，不是视频任务主入口。自动检测同级目录 `../lh-edge-tts/scripts/tts_converter.py`，或通过 `EDGE_TTS_PATH` 环境变量指定，或用 `--tts-command` 替换为任意 TTS 工具
 - **lh-html-to-image**：配套出图能力，不是视频任务主入口。如需自定义更复杂的字幕卡片，可用此 Skill 生成图片后通过 `--images-dir` 传入
+- **frontend-slides**：用于把视频脚本拆成多页前端幻灯片结构，适合讲解型视频
+- **frontend-design**：用于提升多页幻灯片的视觉质感，适合对外发布和视频号风格内容
 
 ## 脚本格式
 
@@ -121,8 +139,10 @@ python3 {baseDir}/scripts/generate.py <脚本路径> [选项]
 ## 工作流程
 
 1. 解析脚本 Markdown，提取各分段
-2. 每段口播 -> TTS 生成 mp3
-3. 每段字幕 -> HTML 模板截图生成 9:16 图片（或从 `--images-dir` 加载）
-4. 如果 `platform=wechat-channel` 且发现横版截图，先包进 1080×1920 竖版容器，避免拉伸变形
-5. 每张图 + 对应音频 -> FFmpeg 合成视频片段
-6. 拼接所有片段 -> 输出 MP4
+2. 选择画面模式：`basic` / `frontend` / `auto`
+3. `basic` 模式：每段字幕 -> HTML 模板截图生成 9:16 图片
+4. `frontend` 模式：先生成前端幻灯片页面，再自动截图为 `slide_01.png...`
+5. 每段口播 -> TTS 生成 mp3
+6. 如果 `platform=wechat-channel` 且发现横版截图，先包进 1080×1920 竖版容器，避免拉伸变形
+7. 每张图 + 对应音频 -> FFmpeg 合成视频片段
+8. 拼接所有片段 -> 输出 MP4
