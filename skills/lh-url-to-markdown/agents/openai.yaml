@@ -1,0 +1,4 @@
+interface:
+  display_name: "URL to Markdown"
+  short_description: "Save links as Markdown for reading and knowledge capture"
+  default_prompt: "Use $lh-url-to-markdown to save this URL as Markdown for later reading or study."

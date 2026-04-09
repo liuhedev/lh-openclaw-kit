@@ -1,7 +1,6 @@
 ---
 name: lh-url-to-markdown
-description: 抓取任意 URL 并转换为 Markdown，使用 Chrome CDP 完整渲染页面。保存渲染后的 HTML 快照，支持自动下载媒体资源。支持自动捕获和等待用户信号两种模式（适合需要登录的页面）。当用户需要保存网页为 Markdown 时触发。
-version: 2.0.0
+description: 抓取任意 URL，经 Chrome CDP 完整渲染后转为 Markdown，并可本地化图片和视频。用于把网页、文章、文档、帖子、页面链接保存下来做收藏、归档、稍后阅读、学习沉淀、知识库入库、转 Markdown、网页转 md、保存网页内容、抓取网页正文等场景；当用户贴出 URL 并说“收藏这篇”“保存这个链接”“留着学习”“学习这篇”“归档一下”“转成 Markdown”“抓成 md”“存到本地”时触发。
 metadata:
   openclaw:
     homepage: https://github.com/liuhedev/lh-openclaw-kit
@@ -11,229 +10,186 @@ metadata:
         - npx
 ---
 
-# URL to Markdown
+# URL 转 Markdown（lh-url-to-markdown）
 
-Fetches any URL via Chrome CDP, saves the rendered HTML snapshot, and converts it to clean markdown.
+通过 Chrome CDP 拉取并渲染页面，输出带元数据的 Markdown。
 
-## Script Directory
+## 意图映射
 
-**Important**: All scripts are located in the `scripts/` subdirectory of this skill.
+将下面这些表达视为本技能的直接触发信号，即使用户没有明确说“转 Markdown”也应命中：
 
-**Agent Execution Instructions**:
-1. Determine this SKILL.md file's directory path as `{baseDir}`
-2. Script path = `{baseDir}/scripts/<script-name>.ts`
-3. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun
-4. Replace all `{baseDir}` and `${BUN_X}` in this document with actual values
+- 收藏这篇 / 收藏这个链接 / 先存一下
+- 留着学习 / 稍后看 / 稍后阅读
+- 归档这篇文章 / 沉淀到本地 / 入库到知识库前先抓下来
+- 把这个网页保存成 md / 转成 Markdown / 网页转 md
+- 抓取这个链接 / 保存正文 / 拉成 Markdown
 
-**Script Reference**:
-| Script | Role |
+## Agent 执行顺序（必读）
+
+1. 将本 `SKILL.md` 所在目录记为 `{baseDir}`；**仅直接运行** `{baseDir}/scripts/main.ts`。
+2. 按下方「偏好设置」解析 `EXTEND.md`；不存在则先完成首轮配置（阻塞），再抓取。
+3. 解析运行时：`bun` 可用则用 `bun`，否则 `npx -y bun`；下文 `${BUN_X}`、`{baseDir}` 替换为实际值。
+
+## 脚本说明
+
+| 脚本 | 作用 |
+|------|------|
+| `scripts/main.ts` | **唯一入口**，由 Agent 直接执行 |
+| `scripts/html-to-markdown.ts` | 内部：HTML→Markdown（Defuddle 优先，失败则降级 legacy） |
+| `scripts/cdp.ts` | 内部：CDP 启动、页面捕获、跨平台路径与超时 |
+| `scripts/media-localizer.ts` | 内部：媒体下载与 Markdown 链接重写 |
+
+## 偏好设置（EXTEND.md）
+
+按优先级查找（先命中先用）：
+
+| 优先级 | 路径 |
 |--------|------|
-| `scripts/main.ts` | **Entry point — the only script to run directly** |
-| `scripts/html-to-markdown.ts` | Internal — HTML→Markdown（Defuddle-first，自动降级到 legacy 路径） |
-| `scripts/cdp.ts` | Internal — Chrome CDP 启动与页面捕获、跨平台路径解析、超时常量 |
-| `scripts/media-localizer.ts` | Internal — 图片/视频下载与 Markdown 链接重写 |
+| 1 | `<项目根>/.lh-skills/lh-url-to-markdown/EXTEND.md` |
+| 2 | `${XDG_CONFIG_HOME:-$HOME/.config}/lh-skills/lh-url-to-markdown/EXTEND.md` |
+| 3 | `$HOME/.lh-skills/lh-url-to-markdown/EXTEND.md` |
 
-## Preferences (EXTEND.md)
-
-Check EXTEND.md existence (priority order):
+检测示例：
 
 ```bash
-# macOS, Linux, WSL, Git Bash
+# macOS / Linux / WSL / Git Bash
 test -f .lh-skills/lh-url-to-markdown/EXTEND.md && echo "project"
 test -f "${XDG_CONFIG_HOME:-$HOME/.config}/lh-skills/lh-url-to-markdown/EXTEND.md" && echo "xdg"
 test -f "$HOME/.lh-skills/lh-url-to-markdown/EXTEND.md" && echo "user"
 ```
 
 ```powershell
-# PowerShell (Windows)
+# Windows PowerShell
 if (Test-Path .lh-skills/lh-url-to-markdown/EXTEND.md) { "project" }
 $xdg = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { "$HOME/.config" }
 if (Test-Path "$xdg/lh-skills/lh-url-to-markdown/EXTEND.md") { "xdg" }
 if (Test-Path "$HOME/.lh-skills/lh-url-to-markdown/EXTEND.md") { "user" }
 ```
 
-┌────────────────────────────────────────────────────────┬───────────────────┐
-│                          Path                          │     Location      │
-├────────────────────────────────────────────────────────┼───────────────────┤
-│ .lh-skills/lh-url-to-markdown/EXTEND.md          │ Project directory │
-├────────────────────────────────────────────────────────┼───────────────────┤
-│ $HOME/.lh-skills/lh-url-to-markdown/EXTEND.md    │ User home         │
-└────────────────────────────────────────────────────────┴───────────────────┘
+| 查找结果 | 动作 |
+|----------|------|
+| 找到 | 读取并按本文映射到 CLI |
+| 未找到 | **必须**走首轮配置（见下），**禁止**在未询问用户前静默写入默认 `EXTEND.md` |
 
-┌───────────┬───────────────────────────────────────────────────────────────────────────┐
-│  Result   │                                  Action                                   │
-├───────────┼───────────────────────────────────────────────────────────────────────────┤
-│ Found     │ Read, parse, apply settings                                               │
-├───────────┼───────────────────────────────────────────────────────────────────────────┤
-│ Not found │ **MUST** run first-time setup (see below) — do NOT silently create defaults │
-└───────────┴───────────────────────────────────────────────────────────────────────────┘
+当前文档约定键：`download_media`、`default_output_dir`（若 `EXTEND.md` 增加其他键，以文件为准）。
 
-**EXTEND.md Supports**: Download media by default | Default output directory | Default capture mode | Timeout settings
+### 首轮配置（阻塞）
 
-### First-Time Setup (BLOCKING)
+未找到 `EXTEND.md` 时，**必须先**用 `AskUserQuestion` **一次调用**问清偏好并写入文件，**再**执行任何 URL 转换。
 
-**CRITICAL**: When EXTEND.md is not found, you **MUST use `AskUserQuestion`** to ask the user for their preferences before creating EXTEND.md. **NEVER** create EXTEND.md with defaults without asking. This is a **BLOCKING** operation — do NOT proceed with any conversion until setup is complete.
+**问题 1** — header: `Media`，question: `How to handle images and videos in pages?`
 
-Use `AskUserQuestion` with ALL questions in ONE call:
+- `Ask each time (Recommended)` — 保存 Markdown 后再问是否下载媒体
+- `Always download` — 始终下载到 `imgs/`、`videos/`
+- `Never download` — Markdown 中保留远程 URL
 
-**Question 1** — header: "Media", question: "How to handle images and videos in pages?"
-- "Ask each time (Recommended)" — After saving markdown, ask whether to download media
-- "Always download" — Always download media to local imgs/ and videos/ directories
-- "Never download" — Keep original remote URLs in markdown
+**问题 2** — header: `Output`，question: `Default output directory?`
 
-**Question 2** — header: "Output", question: "Default output directory?"
-- "url-to-markdown (Recommended)" — Save to ./url-to-markdown/{domain}/{slug}.md
-- (User may choose "Other" to type a custom path)
+- `url-to-markdown (Recommended)` — `./url-to-markdown/{slug}.md`（与 `main.ts` 默认一致）
+- 可选 Other 由用户填自定义路径
 
-**Question 3** — header: "Save", question: "Where to save preferences?"
-- "User (Recommended)" — ~/.lh-skills/ (all projects)
-- "Project" — .lh-skills/ (this project only)
+**问题 3** — header: `Save`，question: `Where to save preferences?`
 
-After user answers, create EXTEND.md at the chosen location, confirm "Preferences saved to [path]", then continue.
+- `User (Recommended)` — `~/.lh-skills/`（全局）
+- `Project` — 项目下 `.lh-skills/`
 
-Full reference: [references/config/first-time-setup.md](references/config/first-time-setup.md)
+写入后回复「Preferences saved to [path]」再继续。完整说明：[references/config/first-time-setup.md](references/config/first-time-setup.md)
 
-### Supported Keys
+### 配置项与 CLI 映射
 
-| Key | Default | Values | Description |
-|-----|---------|--------|-------------|
-| `download_media` | `ask` | `ask` / `1` / `0` | `ask` = prompt each time, `1` = always download, `0` = never |
-| `default_output_dir` | empty | path or empty | Default output directory (empty = `./url-to-markdown/`) |
+| 键 | 默认 | 取值 | 含义 |
+|----|------|------|------|
+| `download_media` | `ask` | `ask` / `1` / `0` | 每次询问 / 总是下载 / 从不下载 |
+| `default_output_dir` | 空 | 路径或空 | 空：Agent 不传 `--output-dir` 时由脚本默认写到 cwd 下 `url-to-markdown/`（脚本侧还可被环境变量 `URL_DATA_DIR` 覆盖） |
 
-**EXTEND.md → CLI mapping**:
-| EXTEND.md key | CLI argument | Notes |
-|---------------|-------------|-------|
+| EXTEND.md | CLI | 说明 |
+|-----------|-----|------|
 | `download_media: 1` | `--download-media` | |
-| `default_output_dir: ./posts/` | `--output-dir ./posts/` | Directory path. Do NOT pass to `-o` (which expects a file path) |
+| `default_output_dir: ./posts/` | `--output-dir ./posts/` | 目录；勿与 `-o`（单文件）混用 |
 
-**Value priority**:
-1. CLI arguments (`--download-media`, `-o`, `--output-dir`)
-2. EXTEND.md
-3. Skill defaults
+**优先级**：命令行参数 > EXTEND.md > 技能内默认。
 
-## Features
+## 功能要点
 
-- Chrome CDP for full JavaScript rendering
-- Two capture modes: auto or wait-for-user
-- Save rendered HTML as a sibling `-captured.html` file
-- Clean markdown output with metadata
-- Defuddle-first markdown conversion with automatic fallback to the pre-Defuddle extractor from git history
-- Handles login-required pages via wait mode
-- Download images and videos to local directories
+- Chrome CDP 全量执行 JS 后的 DOM
+- 抓取模式：默认自动；`--wait` 等用户就绪（登录、懒加载、付费墙）
+- Defuddle 优先，异常或质量明显差时自动回退到历史 legacy 管线
+- 可选将图片/视频拉到本地并重写链接
 
-## Usage
+## 命令示例
 
 ```bash
-# Auto mode (default) - capture when page loads
+# 默认：网络空闲后抓取
 ${BUN_X} {baseDir}/scripts/main.ts <url>
 
-# Wait mode - wait for user signal before capture
+# 等待用户在终端按 Enter 后再抓取
 ${BUN_X} {baseDir}/scripts/main.ts <url> --wait
 
-# Save to specific file
+# 指定输出文件
 ${BUN_X} {baseDir}/scripts/main.ts <url> -o output.md
 
-# Save to a custom output directory (auto-generates filename)
+# 指定输出目录（自动生成 slug 文件名）
 ${BUN_X} {baseDir}/scripts/main.ts <url> --output-dir ./posts/
 
-# Download images and videos to local directories
+# 本次强制下载媒体并改写链接
 ${BUN_X} {baseDir}/scripts/main.ts <url> --download-media
 ```
 
-## Options
+## 命令行选项
 
-| Option | Description |
-|--------|-------------|
-| `<url>` | URL to fetch |
-| `-o <path>` | Output file path — must be a **file** path, not directory (default: auto-generated) |
-| `--output-dir <dir>` | Base output directory — auto-generates `{dir}/{domain}/{slug}.md` (default: `./url-to-markdown/`) |
-| `--wait` | Wait for user signal before capturing |
-| `--timeout <ms>` | Page load timeout (default: 30000) |
-| `--download-media` | Download image/video assets to local `imgs/` and `videos/`, and rewrite markdown links to local relative paths |
+| 选项 | 说明 |
+|------|------|
+| `<url>` | 目标地址 |
+| `-o <path>` | 输出 **文件** 路径（非目录）；默认按规则生成 |
+| `--output-dir <dir>` | 输出目录，生成 `{dir}/{slug}.md`；未指定时默认为 cwd 下 `url-to-markdown/`（或 `URL_DATA_DIR`） |
+| `--wait` | 等待用户信号再截图/抓 HTML |
+| `--timeout <ms>` | 页面超时，默认 `30000` |
+| `--download-media` | 下载图片/视频到同级 `imgs/`、`videos/`，并重写为相对路径 |
 
-## Capture Modes
+## 抓取模式
 
-| Mode | Behavior | Use When |
-|------|----------|----------|
-| Auto (default) | Capture on network idle | Public pages, static content |
-| Wait (`--wait`) | User signals when ready | Login-required, lazy loading, paywalls |
+| 模式 | 行为 | 适用 |
+|------|------|------|
+| 自动（默认） | 网络空闲后捕获 | 公开页、静态内容 |
+| `--wait` | 终端提示后由用户确认再捕获 | 需登录、强懒加载、付费墙 |
 
-**Wait mode workflow**:
-1. Run with `--wait` → script outputs "Press Enter when ready"
-2. Ask user to confirm page is ready
-3. Send newline to stdin to trigger capture
+**`--wait` 流程**：脚本输出 `Page opened. Press Enter when ready to capture...` → 确认用户页面就绪 → 向 stdin 发送换行触发捕获。
 
-## Output Format
+## 输出说明
 
-Each run saves two files side by side:
+每次运行默认产出一个 Markdown 文件：
 
-- Markdown: YAML front matter with `url`, `title`, `description`, `author`, `published`, optional `coverImage`, and `captured_at`, followed by converted markdown content
-- HTML snapshot: `*-captured.html`, containing the rendered page HTML captured from Chrome
+- **Markdown**：YAML front matter（`url`、`title`、`description`、`author`、`published`、可选 `coverImage`、`captured_at`）+ 正文
 
-The HTML snapshot is saved before any markdown media localization, so it stays a faithful capture of the page DOM used for conversion.
+默认路径：`url-to-markdown/<slug>.md`。`--output-dir ./posts/` 时为 `./posts/<slug>.md`。
 
-## Output Directory
+- `slug`：优先页面标题，否则取自 URL；去除路径非法字符，最长约 80 字符（与 `main.ts` 一致）
+- 重名：追加时间戳 `<slug>-YYYYMMDD-HHMMSS.md`
 
-Default: `url-to-markdown/<domain>/<slug>.md`
-With `--output-dir ./posts/`: `./posts/<domain>/<slug>.md`
+启用 `--download-media` 时：`imgs/`、`videos/` 与 Markdown 同级，链接改为相对路径。
 
-HTML snapshot path uses the same basename:
+## 转换降级
 
-- `url-to-markdown/<domain>/<slug>-captured.html`
-- `./posts/<domain>/<slug>-captured.html`
+1. 先试 Defuddle  
+2. 若抛错、无法加载、产出明显残缺或劣于 legacy，则自动回退到基于 Readability/选择器/Next 数据等的旧实现  
+3. 日志：`Converter: defuddle` 或 `Converter: legacy:...` 及 `Fallback used: ...`
 
-- `<slug>`: From page title or URL path (kebab-case, 2-6 words)
-- Conflict resolution: Append timestamp `<slug>-YYYYMMDD-HHMMSS.md`
+## 媒体下载（与 `download_media`）
 
-When `--download-media` is enabled:
-- Images are saved to `imgs/` next to the markdown file
-- Videos are saved to `videos/` next to the markdown file
-- Markdown media links are rewritten to local relative paths
+| EXTEND 值 | 行为 |
+|-----------|------|
+| `1` | 执行时带 `--download-media` |
+| `0` | 不带 `--download-media` |
+| `ask` | 见下「每次询问」 |
 
-## Conversion Fallback
+**每次询问**：先不带 `--download-media` 生成 Markdown → 检查是否含远程媒体 URL → 无则结束；有则用 `AskUserQuestion`（header: `Media`，question: `Download N images/videos to local files?`，Yes/No）→ Yes 时**再跑一次**并加 `--download-media`（覆盖 Markdown）。
 
-Conversion order:
+## 环境变量与排错
 
-1. Try Defuddle first
-2. If Defuddle throws, cannot load, returns obviously incomplete markdown, or captures lower-quality content than the legacy pipeline, automatically fall back to the pre-Defuddle extractor
-3. The fallback path uses the older Readability/selector/Next.js-data based HTML-to-Markdown implementation recovered from git history
+| 变量 | 作用 |
+|------|------|
+| `URL_CHROME_PATH` | 指定 Chrome 可执行文件 |
+| `URL_DATA_DIR` | 覆盖默认输出根目录（未设置时脚本使用 `cwd/url-to-markdown`） |
+| `URL_CHROME_PROFILE_DIR` | Chrome Profile 目录 |
 
-CLI output will show:
-
-- `Converter: defuddle` when Defuddle succeeds
-- `Converter: legacy:...` plus `Fallback used: ...` when fallback was needed
-
-## Media Download Workflow
-
-Based on `download_media` setting in EXTEND.md:
-
-| Setting | Behavior |
-|---------|----------|
-| `1` (always) | Run script with `--download-media` flag |
-| `0` (never) | Run script without `--download-media` flag |
-| `ask` (default) | Follow the ask-each-time flow below |
-
-### Ask-Each-Time Flow
-
-1. Run script **without** `--download-media` → markdown saved
-2. Check saved markdown for remote media URLs (`https://` in image/video links)
-3. **If no remote media found** → done, no prompt needed
-4. **If remote media found** → use `AskUserQuestion`:
-   - header: "Media", question: "Download N images/videos to local files?"
-   - "Yes" — Download to local directories
-   - "No" — Keep remote URLs
-5. If user confirms → run script **again** with `--download-media` (overwrites markdown with localized links)
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `URL_CHROME_PATH` | Custom Chrome executable path |
-| `URL_DATA_DIR` | Custom data directory |
-| `URL_CHROME_PROFILE_DIR` | Custom Chrome profile directory |
-
-**Troubleshooting**: Chrome not found → set `URL_CHROME_PATH`. Timeout → increase `--timeout`. Complex pages → try `--wait` mode. If markdown quality is poor, inspect the saved `-captured.html` and check whether the run logged a legacy fallback.
-
-## Extension Support
-
-Custom configurations via EXTEND.md. See **Preferences** section for paths and supported options.
+找不到 Chrome → 设 `URL_CHROME_PATH`。超时 → 增大 `--timeout`。复杂页 → 试 `--wait`。Markdown 质量差 → 重点看 `Converter` 与 `Fallback used` 日志判断是否走了 legacy。

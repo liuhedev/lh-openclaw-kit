@@ -67,12 +67,6 @@ function formatTimestamp(): string {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
-function deriveHtmlSnapshotPath(markdownPath: string): string {
-  const parsed = path.parse(markdownPath);
-  const basename = parsed.ext ? parsed.name : parsed.base;
-  return path.join(parsed.dir, `${basename}-captured.html`);
-}
-
 async function generateOutputPath(url: string, title: string, outputDir?: string): Promise<string> {
   const slug = generateSlug(title, url);
   const dataDir = outputDir ? path.resolve(outputDir) : resolveUrlToMarkdownDataDir();
@@ -183,9 +177,7 @@ async function main(): Promise<void> {
   const result = await captureUrl(args);
   const outputPath = args.output || await generateOutputPath(args.url, result.metadata.title, args.outputDir);
   const outputDir = path.dirname(outputPath);
-  const htmlSnapshotPath = deriveHtmlSnapshotPath(outputPath);
   await mkdir(outputDir, { recursive: true });
-  await writeFile(htmlSnapshotPath, result.rawHtml, "utf-8");
 
   let document = createMarkdownDocument(result);
 
@@ -208,7 +200,6 @@ async function main(): Promise<void> {
   await writeFile(outputPath, document, "utf-8");
 
   console.log(`Saved: ${outputPath}`);
-  console.log(`Saved HTML: ${htmlSnapshotPath}`);
   console.log(`Title: ${result.metadata.title || "(no title)"}`);
   console.log(`Converter: ${result.conversionMethod}`);
   if (result.fallbackReason) {

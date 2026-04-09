@@ -25,7 +25,7 @@ export interface PageMetadata {
 export interface ConversionResult {
   metadata: PageMetadata;
   markdown: string;
-  rawHtml: string;
+  pageHtml: string;
   conversionMethod: string;
   fallbackReason?: string;
 }
@@ -888,7 +888,7 @@ async function tryDefuddleConversion(
           coverImage: pickString(result.image, baseMetadata.coverImage) ?? undefined,
         },
         markdown,
-        rawHtml: html,
+        pageHtml: html,
         conversionMethod: "defuddle",
       },
     };
@@ -917,7 +917,7 @@ function convertWithLegacyExtractor(html: string, baseMetadata: PageMetadata): C
       published: pickString(extracted?.published, baseMetadata.published) ?? undefined,
     },
     markdown: normalizeMarkdown(markdown),
-    rawHtml: html,
+    pageHtml: html,
     conversionMethod: extracted ? `legacy:${extracted.method}` : "legacy:plain-text",
   };
 }
