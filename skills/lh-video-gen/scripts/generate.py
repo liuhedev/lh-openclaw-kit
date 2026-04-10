@@ -263,6 +263,10 @@ def build_frontend_slides(sections, frontend_dir, width, height):
     render_dir = frontend_dir / 'render'
     render_dir.mkdir(parents=True, exist_ok=True)
 
+    def format_text_html(text):
+        safe = (text or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        return safe.replace('\n', '<br>')
+
     slides = []
     for idx, section in enumerate(sections, 1):
         title = section['title']
@@ -310,12 +314,17 @@ def build_frontend_slides(sections, frontend_dir, width, height):
                 items.append(f'''<div class="item-row"><div class="item-icon">{idx}</div><div class="item-text"><h3>{safe}</h3></div></div>''')
             visual_html = f'<div class="feature-card">{"".join(items)}</div>'
 
+        subtitle_text = section['subtitle'] or section['visual'] or title
+        caption_text = section['subtitle'] or section['visual'] or title
+        display_subtitle = format_text_html(subtitle_text)
+        display_caption = format_text_html(caption_text)
+
         slides.append({
             'tag': tag,
             'title': title_html,
-            'subtitle': (section['visual'] or section['subtitle'] or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'),
+            'subtitle': display_subtitle,
             'visual_html': visual_html,
-            'caption': subtitle or title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            'caption': display_caption
         })
 
     slides_json = json.dumps(slides, ensure_ascii=False)

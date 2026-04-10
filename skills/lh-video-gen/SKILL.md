@@ -81,7 +81,7 @@ python3 {baseDir}/scripts/generate.py script.md --tts-command "my-tts {text} -o 
 python3 {baseDir}/scripts/generate.py <脚本路径> [选项]
 
 选项：
-  -o, --output        输出 MP4 路径（必须显式传入；文章归属任务用 `content/articles/YYYY-MM-DD/resources/video/output.mp4`）
+  -o, --output        输出 MP4 路径（默认：`tmp/video-output.mp4`；文章归属任务建议显式传 `content/articles/YYYY-MM-DD/resources/video/output.mp4`）
   -v, --voice         TTS 音色（默认：zh-CN-YunxiNeural）
   -r, --rate          语速（默认：+0%，如 +10%、-10%）
   -w, --width         视频宽度（默认：1080）

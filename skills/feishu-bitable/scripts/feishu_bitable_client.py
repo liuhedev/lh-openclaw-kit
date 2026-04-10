@@ -2,12 +2,14 @@
 """飞书 bitable 客户端。"""
 
 import json
+import os
 from pathlib import Path
 
 import requests
 
 OPENCLAW_CONFIG = Path.home() / ".openclaw" / "openclaw.json"
 OPENCLAW_ENV = Path.home() / ".openclaw" / ".env"
+DEV_WORKFLOW_ENV = Path.home() / ".config" / "dev-workflow" / ".env"
 
 
 def load_env_file(path: Path) -> dict:
@@ -23,18 +25,42 @@ def load_env_file(path: Path) -> dict:
     return env
 
 
-def load_feishu_credentials() -> tuple[str, str]:
+def expand_env(value: str) -> str:
+    """展开 ${VAR} 格式的环境变量占位符。"""
+    import re
+
+    return re.sub(
+        r"[$][{]([^}]+)[}]",
+        lambda match: os.environ.get(match.group(1), match.group(0)),
+        value,
+    )
+
+
+def load_feishu_credentials(account_name: str = "main") -> tuple[str, str]:
     """从 .env 或 openclaw.json 加载飞书凭证。"""
-    env = load_env_file(OPENCLAW_ENV)
-    app_id = env.get("FEISHU_MAIN_APP_ID")
-    app_secret = env.get("FEISHU_MAIN_APP_SECRET")
-    if app_id and app_secret:
-        return app_id, app_secret
+    for env_file in (DEV_WORKFLOW_ENV, OPENCLAW_ENV):
+        for key, value in load_env_file(env_file).items():
+            os.environ.setdefault(key, value)
+
+    env_key_prefix = account_name.upper().replace("-", "_")
+    candidates = []
+    if account_name == "main":
+        candidates.append(("FEISHU_MAIN_APP_ID", "FEISHU_MAIN_APP_SECRET"))
+    candidates.append((f"FEISHU_{env_key_prefix}_APP_ID", f"FEISHU_{env_key_prefix}_APP_SECRET"))
+
+    for app_id_key, app_secret_key in candidates:
+        app_id = os.environ.get(app_id_key)
+        app_secret = os.environ.get(app_secret_key)
+        if app_id and app_secret:
+            return app_id, app_secret
 
     with open(OPENCLAW_CONFIG, encoding="utf-8") as file:
         config = json.load(file)
-    account = config["channels"]["feishu"]["accounts"]["main"]
-    return account["appId"], account["appSecret"]
+    accounts = config["channels"]["feishu"]["accounts"]
+    account = accounts.get(account_name) or accounts.get("main")
+    if not account:
+        raise KeyError(f"未找到飞书账号配置: {account_name}")
+    return expand_env(account["appId"]), expand_env(account["appSecret"])
 
 
 def get_tenant_token(app_id: str, app_secret: str) -> str:
@@ -49,6 +75,12 @@ def get_tenant_token(app_id: str, app_secret: str) -> str:
     if data.get("code") != 0:
         raise RuntimeError(f"获取飞书 token 失败: {data}")
     return data["tenant_access_token"]
+
+
+def get_tenant_token_for_account(account_name: str = "main") -> str:
+    """按账号名加载凭证并获取飞书 tenant_access_token。"""
+    app_id, app_secret = load_feishu_credentials(account_name)
+    return get_tenant_token(app_id, app_secret)
 
 
 def feishu_headers(token: str) -> dict:

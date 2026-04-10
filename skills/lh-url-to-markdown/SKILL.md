@@ -27,8 +27,8 @@ metadata:
 ## Agent 执行顺序（必读）
 
 1. 将本 `SKILL.md` 所在目录记为 `{baseDir}`；**仅直接运行** `{baseDir}/scripts/main.ts`。
-2. 按下方「偏好设置」解析 `EXTEND.md`；不存在则先完成首轮配置（阻塞），再抓取。
-3. 解析运行时：`bun` 可用则用 `bun`，否则 `npx -y bun`；下文 `${BUN_X}`、`{baseDir}` 替换为实际值。
+2. 解析运行时：`bun` 可用则用 `bun`，否则 `npx -y bun`；下文 `${BUN_X}`、`{baseDir}` 替换为实际值。
+3. 当前实现仅支持命令行参数和环境变量控制，不读取 `EXTEND.md`，也没有内建首轮偏好初始化流程。
 
 ## 脚本说明
 
@@ -39,75 +39,16 @@ metadata:
 | `scripts/cdp.ts` | 内部：CDP 启动、页面捕获、跨平台路径与超时 |
 | `scripts/media-localizer.ts` | 内部：媒体下载与 Markdown 链接重写 |
 
-## 偏好设置（EXTEND.md）
+## 运行配置
 
-按优先级查找（先命中先用）：
+当前实现支持以下控制方式：
 
-| 优先级 | 路径 |
-|--------|------|
-| 1 | `<项目根>/.lh-skills/lh-url-to-markdown/EXTEND.md` |
-| 2 | `${XDG_CONFIG_HOME:-$HOME/.config}/lh-skills/lh-url-to-markdown/EXTEND.md` |
-| 3 | `$HOME/.lh-skills/lh-url-to-markdown/EXTEND.md` |
+| 方式 | 支持项 |
+|------|--------|
+| CLI 参数 | `-o`、`--output-dir`、`--wait`、`--timeout`、`--download-media` |
+| 环境变量 | `URL_CHROME_PATH`、`URL_DATA_DIR`、`URL_CHROME_PROFILE_DIR` |
 
-检测示例：
-
-```bash
-# macOS / Linux / WSL / Git Bash
-test -f .lh-skills/lh-url-to-markdown/EXTEND.md && echo "project"
-test -f "${XDG_CONFIG_HOME:-$HOME/.config}/lh-skills/lh-url-to-markdown/EXTEND.md" && echo "xdg"
-test -f "$HOME/.lh-skills/lh-url-to-markdown/EXTEND.md" && echo "user"
-```
-
-```powershell
-# Windows PowerShell
-if (Test-Path .lh-skills/lh-url-to-markdown/EXTEND.md) { "project" }
-$xdg = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { "$HOME/.config" }
-if (Test-Path "$xdg/lh-skills/lh-url-to-markdown/EXTEND.md") { "xdg" }
-if (Test-Path "$HOME/.lh-skills/lh-url-to-markdown/EXTEND.md") { "user" }
-```
-
-| 查找结果 | 动作 |
-|----------|------|
-| 找到 | 读取并按本文映射到 CLI |
-| 未找到 | **必须**走首轮配置（见下），**禁止**在未询问用户前静默写入默认 `EXTEND.md` |
-
-当前文档约定键：`download_media`、`default_output_dir`（若 `EXTEND.md` 增加其他键，以文件为准）。
-
-### 首轮配置（阻塞）
-
-未找到 `EXTEND.md` 时，**必须先**用 `AskUserQuestion` **一次调用**问清偏好并写入文件，**再**执行任何 URL 转换。
-
-**问题 1** — header: `Media`，question: `How to handle images and videos in pages?`
-
-- `Ask each time (Recommended)` — 保存 Markdown 后再问是否下载媒体
-- `Always download` — 始终下载到 `imgs/`、`videos/`
-- `Never download` — Markdown 中保留远程 URL
-
-**问题 2** — header: `Output`，question: `Default output directory?`
-
-- `url-to-markdown (Recommended)` — `./url-to-markdown/{slug}.md`（与 `main.ts` 默认一致）
-- 可选 Other 由用户填自定义路径
-
-**问题 3** — header: `Save`，question: `Where to save preferences?`
-
-- `User (Recommended)` — `~/.lh-skills/`（全局）
-- `Project` — 项目下 `.lh-skills/`
-
-写入后回复「Preferences saved to [path]」再继续。完整说明：[references/config/first-time-setup.md](references/config/first-time-setup.md)
-
-### 配置项与 CLI 映射
-
-| 键 | 默认 | 取值 | 含义 |
-|----|------|------|------|
-| `download_media` | `ask` | `ask` / `1` / `0` | 每次询问 / 总是下载 / 从不下载 |
-| `default_output_dir` | 空 | 路径或空 | 空：Agent 不传 `--output-dir` 时由脚本默认写到 cwd 下 `url-to-markdown/`（脚本侧还可被环境变量 `URL_DATA_DIR` 覆盖） |
-
-| EXTEND.md | CLI | 说明 |
-|-----------|-----|------|
-| `download_media: 1` | `--download-media` | |
-| `default_output_dir: ./posts/` | `--output-dir ./posts/` | 目录；勿与 `-o`（单文件）混用 |
-
-**优先级**：命令行参数 > EXTEND.md > 技能内默认。
+优先级：命令行参数 > 环境变量 > 脚本默认值。
 
 ## 功能要点
 
@@ -174,15 +115,10 @@ ${BUN_X} {baseDir}/scripts/main.ts <url> --download-media
 2. 若抛错、无法加载、产出明显残缺或劣于 legacy，则自动回退到基于 Readability/选择器/Next 数据等的旧实现  
 3. 日志：`Converter: defuddle` 或 `Converter: legacy:...` 及 `Fallback used: ...`
 
-## 媒体下载（与 `download_media`）
+## 媒体下载
 
-| EXTEND 值 | 行为 |
-|-----------|------|
-| `1` | 执行时带 `--download-media` |
-| `0` | 不带 `--download-media` |
-| `ask` | 见下「每次询问」 |
-
-**每次询问**：先不带 `--download-media` 生成 Markdown → 检查是否含远程媒体 URL → 无则结束；有则用 `AskUserQuestion`（header: `Media`，question: `Download N images/videos to local files?`，Yes/No）→ Yes 时**再跑一次**并加 `--download-media`（覆盖 Markdown）。
+- 默认保留远程媒体 URL。
+- 需要本地化图片/视频时，显式加 `--download-media`。
 
 ## 环境变量与排错
 

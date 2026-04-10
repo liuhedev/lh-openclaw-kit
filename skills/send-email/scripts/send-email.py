@@ -185,6 +185,7 @@ def send_email(to_addrs, cc_addrs, subject, body_md, attachments=None, signature
     port = int(os.environ.get('SMTP_PORT', '465'))
     user = os.environ.get('SMTP_USER')
     password = os.environ.get('SMTP_PASS')
+    security = os.environ.get('SMTP_SECURITY', '').strip().lower()
 
     if not user or not password:
         print('错误: 缺少 SMTP_USER 或 SMTP_PASS 环境变量', file=sys.stderr)
@@ -254,7 +255,16 @@ def send_email(to_addrs, cc_addrs, subject, body_md, attachments=None, signature
     server = None
     for attempt in range(max_retries + 1):
         try:
-            server = smtplib.SMTP_SSL(host, port, context=context)
+            use_ssl = security == 'ssl' or (not security and port == 465)
+            use_starttls = security == 'starttls' or (not security and port != 465)
+            if use_ssl:
+                server = smtplib.SMTP_SSL(host, port, context=context)
+            else:
+                server = smtplib.SMTP(host, port)
+                server.ehlo()
+                if use_starttls:
+                    server.starttls(context=context)
+                    server.ehlo()
             server.login(user, password)
             break
         except smtplib.SMTPAuthenticationError:

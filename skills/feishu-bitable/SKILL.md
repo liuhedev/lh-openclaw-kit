@@ -24,11 +24,7 @@ allowed-tools:
 
 ## 脚本路径
 
-入口文件位于 `scripts/feishu_bitable_client.py`。在 **`skills/feishu-bitable/`** 目录下执行：
-
-```bash
-python3 scripts/feishu_bitable_client.py
-```
+入口文件位于 `scripts/feishu_bitable_client.py`。这是一个库模块，没有独立 CLI；在 **`skills/feishu-bitable/`** 目录下由其他 Python 脚本导入使用。
 
 ## 凭证加载
 
@@ -38,6 +34,8 @@ python3 scripts/feishu_bitable_client.py
 2. `~/.config/dev-workflow/.env`
 3. `~/.openclaw/.env`
 4. `~/.openclaw/openclaw.json`（`channels.feishu.accounts.<账号名>`）
+
+默认账号为 `main`。也可以调用 `load_feishu_credentials("其他账号名")` 读取其他账号。
 
 ## 使用方法
 
@@ -71,11 +69,15 @@ update_bitable_record(
 
 ## API 函数说明
 
-### `load_feishu_credentials() -> tuple[str, str]`
+### `load_feishu_credentials(account_name: str = "main") -> tuple[str, str]`
 
 从环境变量或 openclaw.json 加载飞书应用凭证。
 
 **返回：** `(app_id, app_secret)`
+
+### `get_tenant_token_for_account(account_name: str = "main") -> str`
+
+按账号名直接获取 tenant_access_token。
 
 ### `get_tenant_token(app_id: str, app_secret: str) -> str`
 
