@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.html
+!references/report-template.html
+.DS_Store

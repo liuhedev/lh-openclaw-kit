@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  高考志愿填报建议 · 页面模板（gaokao-zhiyuan skill 渲染用）
+  下面以「北京 物化生 544 分」为 demo 填充；{{...}} 标注 skill 实际替换的字段。
+  四维匹配度由引擎计算后注入：score_fit / family_fit / city_fit / career_fit（0-100 + 判定 + 一句依据）。
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>录取参考单 · 高考志愿建议</title>
+<style>
+  :root{
+    --inkblue:#1d4e89; --paper:#f7f9fb; --ink:#1f2937; --mute:#5b6573;
+    --pine:#1a7f37; --vermilion:#b83a2e; --mist:#e8f0f6; --line:#cdd9e3;
+    --rush:#0969da; --gold:#9a6b16;
+    --serif:"Songti SC","STSong","Noto Serif SC",serif;
+    --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#e9edf2;font-family:var(--sans);color:var(--ink);line-height:1.6;
+       padding:20px 12px;-webkit-font-smoothing:antialiased;}
+  .sheet{max-width:780px;margin:0 auto;background:var(--paper);
+         border:1px solid var(--line);border-top:5px solid var(--inkblue);
+         border-radius:4px;box-shadow:0 6px 24px rgba(29,78,137,.08);overflow:hidden;}
+  .pad{padding:26px 30px;}
+  @media(max-width:560px){.pad{padding:20px 16px;}}
+
+  /* —— 抬头 —— */
+  .masthead{border-bottom:1.5px solid var(--inkblue);padding-bottom:14px;margin-bottom:18px;}
+  .doc-no{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);
+          letter-spacing:.04em;margin-bottom:10px;}
+  .title{font-family:var(--serif);font-size:25px;font-weight:700;color:var(--inkblue);
+         letter-spacing:.06em;}
+  .title small{font-family:var(--sans);font-size:12px;font-weight:400;color:var(--mute);
+               letter-spacing:.1em;margin-left:8px;}
+  .profile{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px;}
+  .profile b{font-family:var(--serif);font-size:17px;color:var(--inkblue);
+             font-variant-numeric:tabular-nums;margin-left:3px;}
+  .profile span{color:var(--mute);}
+
+  /* —— headline 判断 —— */
+  .verdict{font-family:var(--serif);font-size:18px;line-height:1.7;color:var(--ink);
+           background:var(--mist);border-left:4px solid var(--inkblue);
+           padding:14px 18px;border-radius:0 6px 6px 0;margin:18px 0 24px;}
+  .verdict em{font-style:normal;color:var(--inkblue);font-weight:700;}
+
+  .eyebrow{font-size:12px;letter-spacing:.22em;color:var(--inkblue);font-weight:700;
+           display:flex;align-items:center;gap:8px;margin:26px 0 12px;}
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  /* —— 签名：匹配度成绩单 —— */
+  .scorecard{border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .scorecard .row{display:grid;grid-template-columns:96px 1fr 52px;align-items:center;
+                  gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);}
+  .scorecard .row:last-child{border-bottom:none;}
+  .scorecard .head{background:var(--inkblue);color:#fff;font-size:13px;letter-spacing:.08em;
+                   grid-template-columns:96px 1fr 52px;}
+  .scorecard .head span:last-child{text-align:right;}
+  .dim{font-weight:600;font-size:14px;}
+  .dim small{display:block;color:var(--mute);font-weight:400;font-size:11px;margin-top:2px;line-height:1.4;}
+  .bar{height:9px;background:#dfe7ee;border-radius:5px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#3a6fb0,var(--inkblue));}
+  .num{font-family:var(--serif);font-size:20px;font-weight:700;text-align:right;
+       font-variant-numeric:tabular-nums;color:var(--inkblue);}
+
+  /* —— 冲稳保 —— */
+  .tier{margin-bottom:18px;}
+  .tier-h{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;}
+  .tier-badge{font-family:var(--serif);font-size:16px;font-weight:700;color:#fff;
+              width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;}
+  .b-chong{background:var(--vermilion);} .b-wen{background:var(--inkblue);} .b-bao{background:var(--pine);}
+  .tier-h .lbl{font-size:13px;color:var(--mute);}
+  .card{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:center;
+        border:1px solid var(--line);border-left:3px solid var(--line);
+        border-radius:5px;padding:11px 14px;margin-bottom:8px;background:#fff;}
+  .card .school{font-weight:600;font-size:15px;}
+  .card .school .city{font-size:11px;color:var(--mute);font-weight:400;margin-left:6px;}
+  .card .major{font-size:13px;color:var(--ink);}
+  .card .reason{grid-column:1/-1;font-size:12px;color:var(--mute);border-top:1px dashed var(--line);
+                padding-top:6px;margin-top:2px;}
+  .card .stats{text-align:right;font-size:12px;color:var(--mute);white-space:nowrap;}
+  .card .stats b{font-family:var(--serif);color:var(--ink);font-variant-numeric:tabular-nums;}
+  .dirtag{display:inline-block;font-size:11px;font-weight:600;color:#fff;
+          padding:1px 7px;border-radius:9px;white-space:nowrap;}
+  .d-green{background:var(--pine);} .d-rush{background:var(--rush);} .d-good{background:#0a7ea4;}
+  .d-safe{background:#6f42c1;} .d-weak{background:var(--gold);} .d-red{background:var(--vermilion);}
+  .card.warn{border-left-color:var(--gold);background:#fdfaf2;}
+
+  /* —— 自查 —— */
+  .checklist{background:var(--mist);border-radius:6px;padding:14px 18px;}
+  .checklist li{list-style:none;padding:7px 0 7px 28px;position:relative;font-size:13.5px;
+                border-bottom:1px dashed #c6d6e4;}
+  .checklist li:last-child{border-bottom:none;}
+  .checklist li::before{content:"?";position:absolute;left:0;top:7px;width:19px;height:19px;
+        background:var(--inkblue);color:#fff;border-radius:50%;font-size:12px;font-weight:700;
+        display:grid;place-items:center;font-family:var(--serif);}
+
+  footer{font-size:11.5px;color:var(--mute);line-height:1.7;border-top:1px solid var(--line);
+         padding:16px 30px;background:#fbfcfd;}
+  footer b{color:var(--ink);}
+  .unverified{color:var(--vermilion);}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="pad">
+
+    <!-- 抬头 -->
+    <div class="masthead">
+      <div class="doc-no"><span>录取参考单 · 编号 GK-{{report_id}}</span><span>生成 {{date}}</span></div>
+      <div class="title">高考志愿填报建议<small>仅供参考 · 以官方招录数据为准</small></div>
+      <div class="profile">
+        <span>省份<b>{{province}}</b></span>
+        <span>选科<b>{{combo}}</b></span>
+        <span>分数<b>{{score}}</b></span>
+        <span>位次<b>{{rank}}</b></span>
+        <span>特控线<b>+{{above_line}}</b></span>
+      </div>
+    </div>
+
+    <!-- headline 判断 -->
+    <div class="verdict">{{verdict}}</div>
+
+    <!-- 签名：匹配度成绩单 -->
+    <div class="eyebrow">匹配度成绩单</div>
+    <div class="scorecard">
+      <div class="row head"><span>维度</span><span>匹配度</span><span>得分</span></div>
+      {{dim_rows}}
+    </div>
+
+    <!-- 冲稳保梯度 -->
+    <div class="eyebrow">志愿梯度 · 冲稳保</div>
+    {{tier_sections}}
+    {{filter_note}}
+
+    <!-- 决策自查 -->
+    <div class="eyebrow">填报前 · 决策自查</div>
+    <ul class="checklist">
+      <li><b>不可替代性</b>：这专业的活，AI 或新人多久能顶替？越难替代越值钱。</li>
+      <li><b>500 强测试</b>：你想去的大厂，往年来这个学校这个专业招人吗？</li>
+      <li><b>10 年后</b>：能接受十年后收入不如当年分数比你低的同学吗？不能就往确定性靠。</li>
+    </ul>
+
+  </div>
+  <footer>
+    <b>数据来源</b>：录取位次/控制线取自教育部阳光高考 (gaokao.chsi.com.cn) 与省考试院；就业绿/红牌出自麦可思就业蓝皮书 2025；急需方向依据教育部红黄牌制度。<br>
+    <b>口径</b>：冲稳保按院校近年录取位次 vs 考生位次。<span class="unverified">标注「待核」的数据为官方未出或未证实，填报前务必以考试院官方一分一段表与历年投档为准。</span> 本单由 gaokao-zhiyuan skill 生成，仅供参考，非官方录取承诺。
+  </footer>
+</div>
+</body>
+</html>
